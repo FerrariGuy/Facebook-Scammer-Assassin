@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Facebook Data Reader</title>
+  <style>
+    body { width: 350px; font-family: sans-serif; font-size: 14px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 10px;}
+    th, td { text-align: left; padding: 6px; border-bottom: 1px solid #ddd; vertical-align: top; }
+    th { width: 90px; font-weight: bold; }
+    td#userName, td#userID, td#userVanity { word-break: break-all; } /* Prevent long IDs/names breaking layout */
+    button { font-size: 13px; } /* General button styling */
+    .profileButton {
+      padding: 8px 15px; /* Slightly smaller padding */
+      background-color: #1877f2; /* FB Blue */
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      display: block; /* Make it block */
+      width: 100%; /* Full width */
+      margin-bottom: 15px; /* Space below */
+      box-sizing: border-box; /* Include padding in width */
+      text-align: center;
+    }
+    .profileButton:hover { background-color: #166fe5; }
+    .profileButton:disabled { background-color: #ccc; cursor: not-allowed; }
+
+    .blockScammerButton {
+      padding: 4px 8px; /* Smaller padding */
+      background-color: #e4e6eb; /* Lighter grey */
+      color: #050505; /* Dark text */
+      border: 1px solid #ccd0d5;
+      cursor: pointer;
+      border-radius: 3px;
+      min-width: 90px; /* Ensure minimum width */
+      box-sizing: border-box;
+    }
+     .blockScammerButton:hover:not(:disabled) { background-color: #dcdfe4; }
+     .blockScammerButton:disabled { background-color: #f0f2f5; color: #bec3c9; cursor: not-allowed; }
+     .blockScammerButton:active:not(:disabled) { background-color: #d2d5d9; }
+
+
+    .copy_userDataButton {
+      padding: 5px 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+
+    .copy_userDataButton.copyButtonFlash {
+      background-color: blue !important;
+      transition: background-color 0.5s ease;
+    }
+    #groupTable th:first-child, #groupTable td:first-child { width: auto; } /* Adjust nickname column width */
+    #groupTable th:last-child, #groupTable td:last-child { width: 100px; text-align: center; } /* Center block button */
+
+    h1 {
+        font-size: 1.1em;
+        margin-top: 15px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 4px;
+        text-align: center; /* <-- Add this */
+    }
+
+  </style>
+  <!-- Load polyfill first -->
+  <script src="browser-polyfill.min.js"></script>
+  <!-- Load the dependencies BEFORE popup.js -->
+  <script src="pageDataExtractor.js"></script>
+  <script src="graphQLBlocker.js"></script>
+  <!-- Load the main popup script LAST -->
+  <script src="popup.js"></script>
+</head>
+<body>
+  <table id="infoTable"> <!-- Added ID -->
+    <tr>
+      <th id="labelName">User Name:</th> <!-- Added ID -->
+      <td id="userName">Loading...</td>
+    </tr>
+    <tr>
+      <th id="labelID">User ID:</th> <!-- Added ID -->
+      <td id="userID">Loading...</td>
+    </tr>
+    <tr>
+      <th id="labelVanity">User Vanity:</th> <!-- Added ID -->
+      <td id="userVanity">Loading...</td>
+    </tr>
+     <tr>
+      <th>Actions:</th> <!-- Combined action row -->
+      <td>
+          <button id="copyButton" class="copy_userDataButton">Copy Data</button>
+          <!-- NEW "Add to Options" Button (Initially Hidden) -->
+          <button id="addToOptionsButton" class="copy_userDataButton" style="display: none; margin-left: 5px; background-color: #ffc107; color: black;">Add to Options</button>
+      </td>
+    </tr>
+  </table>
+
+  <button id="profileActivityButton" class="profileButton" disabled>Profile's Public Activity</button>
+  
+  <!-- NEW Shrug Icon Container -->
+  <div id="shrugContainer" style="text-align: center; margin-top: 15px; display: none;">
+      <img id="shrugIcon" src="shrug_icon.png" alt="Info not applicable" style="max-width: 80px; max-height: 80px;">
+      <!-- Optional text below icon -->
+      <!-- <p style="margin-top: 5px; font-style: italic; color: #555;">Info N/A on this page type</p> -->
+  </div>
+  <!-- END Shrug Icon -->
+
+  <h1 id="blockScammerHeading">Block Scammer:</h1> <!-- Added ID for potential message updates -->
+  <table id="groupTable">
+    <thead>
+        <tr>
+          <th>Group Nickname</th>
+          <th>Action</th>
+        </tr>
+    </thead>
+     <tbody>
+        <!-- Group rows added by JS -->
+     </tbody>
+  </table>
+</body>
+</html>

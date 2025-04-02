@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Options - Facebook Scammer Assassin</title>
+  <style>
+    body { font-family: sans-serif; padding: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: middle; }
+    th { background-color: #f2f2f2; }
+    input[type="text"] { width: 95%; padding: 5px; }
+    input[type="checkbox"] { transform: scale(1.2); }
+    .includeCheckboxCell { width: 60px; text-align: center; }
+    .includeStatus { width: 70px; font-style: italic; color: #555; }
+    .deleteRow { width: 70px; text-align: center; }
+    .deleteButton { padding: 3px 8px; background-color: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; }
+    .deleteButton:hover { background-color: #da190b; }
+    #addRowButton, #saveButton { padding: 10px 20px; margin-right: 10px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; }
+    #addRowButton { background-color: #e7e7e7; }
+    #saveButton { background-color: #4CAF50; color: white; border-color: #4CAF50; }
+    #saveButton.yellow { background-color: #ffeb3b; color: black; border-color: #ffc107; font-weight: bold;}
+    .drag-handle { width: 30px; cursor: move; text-align: center; user-select: none; font-size: 1.2em; color: #777; }
+    select.roleSelect { padding: 4px; min-width: 90px; }
+
+    /* --- New Row Color Styles --- */
+    .admin-row {
+        background-color: #e8f5e9; /* Light Green */
+    }
+    .moderator-row {
+        background-color: #e3f2fd; /* Light Blue */
+    }
+    .invalid-row {
+        background-color: lightcoral !important; /* Use !important to override role color */
+    }
+    /* --- End New Row Color Styles --- */
+    
+    .io-buttons { margin-top: 20px; margin-bottom: 10px; } /* Style for the new buttons */
+    #importFile { display: none; } /* Hide the file input */
+
+    /* SortableJS helper classes */
+    .sortable-ghost { opacity: 0.4; background-color: #eee !important; } /* Ensure ghost has distinct style */
+    .sortable-chosen { /* Optional */ }
+    .sortable-drag { /* Optional */ }
+  </style>
+  <!-- Load Libraries FIRST -->
+  <script src="browser-polyfill.min.js"></script>
+  <script src="Sortable.min.js"></script>
+  <!-- Then load your options script -->
+  <script src="options.js"></script>
+
+</head>
+<body>
+  <h1>Facebook Group Settings</h1>
+  <p>Configure the groups where you want to enable blocking and specify your role in each.</p>
+  <form id="groupForm">
+    <table id="groupTable">
+      <thead>
+        <tr>
+          <th class="drag-handle"></th>
+          <th>Status</th>
+          <th>Include?</th>
+          <th>Group Name*</th>
+          <th>Nickname</th>
+          <th>Group ID*</th>
+          <th>My Role*</th>
+          <th>Group URL</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Rows will be added here by JavaScript -->
+      </tbody>
+    </table>
+    <button type="button" id="addRowButton">Add Group</button>
+    <button type="submit" id="saveButton">Save Settings</button>
+    <p><small>* Group Name, Group ID, and My Role are required.</small></p>
+  </form>
+
+  <!-- NEW Import/Export Section -->
+  <div class="io-buttons">
+      <hr>
+      <h2>Import / Export Settings</h2>
+      <button type="button" id="exportButton">Export Groups</button>
+      <button type="button" id="importButton">Import Groups</button>
+      <input type="file" id="importFile" accept=".json"> <!-- Hidden file input -->
+      <p><small>Imports will add new groups and skip existing groups with the same Group ID.</small></p>
+  </div>
+  <!-- END Import/Export Section -->
+
+</body>
+</html>

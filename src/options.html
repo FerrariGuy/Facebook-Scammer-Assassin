@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Options - Facebook Scammer Assassin</title>
+    <style>
+        /* --- Base styles --- */
+        body { font-family: sans-serif; padding: 15px; }
+        table#groupTable { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: middle; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        input[type="text"] { width: 95%; padding: 5px; box-sizing: border-box; }
+        input[type="checkbox"] { transform: scale(1.2); vertical-align: middle; }
+        .includeCheckboxCell { width: 60px; text-align: center; }
+        .includeStatus { width: 70px; font-style: italic; color: #555; }
+        .deleteRow { width: 70px; text-align: center; }
+        .deleteButton { padding: 3px 8px; background-color: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        .deleteButton:hover { background-color: #da190b; }
+        #addRowButton, #visibleSaveButton { /* Style the VISIBLE buttons */
+            padding: 10px 15px; margin-right: 5px; cursor: pointer;
+            border-radius: 4px; border: 1px solid #ccc; margin-top: 5px;
+        }
+        #addRowButton { background-color: #e7e7e7; color: black; }
+        #visibleSaveButton { background-color: #4CAF50; color: white; border-color: #4CAF50; }
+        #visibleSaveButton.yellow { background-color: #ffeb3b; color: black; border-color: #ffc107; font-weight: bold;}
+        .drag-handle { width: 30px; cursor: move; text-align: center; user-select: none; font-size: 1.2em; color: #777; }
+        select.roleSelect { padding: 4px; min-width: 90px; }
+        #importFile { display: none; }
+
+        /* --- Row Color Styles --- */
+        table#groupTable tbody tr.admin-row td { background-color: #e8f5e9; }
+        table#groupTable tbody tr.moderator-row td { background-color: #e3f2fd; }
+        table#groupTable tbody tr.invalid-row td { background-color: lightcoral !important; }
+        table#groupTable thead th { background-color: #f2f2f2; }
+        /* --- End Row Color Styles --- */
+
+        /* --- Layout Styles for Bottom Row --- */
+        .bottom-controls-container { /* Wraps the 3 sections */
+            display: flex;
+            justify-content: space-between; /* Pushes left and right to edges */
+            align-items: center; /* Vertically align items */
+            gap: 20px; /* Space between items */
+            padding-top: 20px;
+            padding-bottom: 20px;
+            border-top: 1px solid #ccc;
+            margin-top: 15px; /* Space above this container */
+            flex-wrap: wrap; /* Allow wrapping on very small screens */
+        }
+
+        .form-actions-left {
+             order: 1; /* Leftmost item */
+             /* Let width be determined by content */
+        }
+        .form-actions-left p small { margin-top: 10px; display: block; }
+
+        .donation-section-middle {
+            order: 2; /* Middle item */
+            text-align: center;
+            padding: 0 10px; /* Add some horizontal padding */
+             /* Let width be determined by content, or set a flex-basis */
+             /* flex-basis: 30%; */
+        }
+        .donation-section-middle h3 { margin-top: 0; margin-bottom: 5px; font-size: 1em; } /* Smaller heading */
+        .donation-section-middle p { font-size: 0.85em; margin-bottom: 8px; color: #333; line-height: 1.3;}
+        .donation-section-middle img { max-width: 80px; height: auto; border: 1px solid #ccc; margin-top: 5px; }
+        .donation-section-middle .paypal-button { padding: 6px 12px; background-color: #0070ba; color: white; text-decoration: none; border-radius: 5px; font-size: 0.85em; display: inline-block; margin-bottom: 5px; }
+        .donation-section-middle .disclaimer { font-size: 0.75em; margin-top: 5px; color: #777; }
+
+        .io-section-right {
+            order: 3; /* Rightmost item */
+            /* border: 1px solid #00000000; */ /* Invisible border */
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #00000000; /* Restore light bg for contrast */
+            min-width: 250px; /* Minimum width */
+            text-align: left;
+        }
+        .io-section-right h2 { margin-top: 0; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
+        .io-section-right button { margin-right: 5px; margin-bottom: 10px; }
+        .io-section-right p small { display: block; margin-top: 10px; }
+
+        /* SortableJS helper classes */
+        .sortable-ghost { opacity: 0.4; background-color: #eee !important; }
+
+    </style>
+    <!-- Libraries FIRST -->
+    <script src="browser-polyfill.min.js"></script>
+    <script src="Sortable.min.js"></script>
+    <!-- Options script LAST -->
+    <script src="options.js"></script>
+</head>
+<body>
+    <h1>Facebook Group Settings</h1>
+    <p>Configure the groups where you want to enable blocking and specify your role in each.</p>
+
+    <!-- Form still wraps only table for data collection -->
+    <form id="groupForm">
+        <div class="main-content-area">
+            <table id="groupTable">
+                <thead>
+                    <tr>
+                        <th class="drag-handle"></th><th>Status</th><th>Include?</th><th>Group Name*</th>
+                        <th>Nickname</th><th>Group ID*</th><th>My Role*</th><th>Group URL</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody><!-- Rows --></tbody>
+            </table>
+        </div>
+        <!-- Hidden save button still needed for form submission -->
+        <button type="submit" id="saveButton" style="display: none;">Save (Hidden)</button>
+    </form>
+
+    <!-- NEW: Container for Actions, Donation, IO - Placed AFTER form -->
+    <div class="bottom-controls-container">
+
+         <!-- Left Column: Action Buttons -->
+         <div class="form-actions-left">
+             <button type="button" id="addRowButton">Add Group</button>
+             <button type="button" id="visibleSaveButton">Save Settings</button>
+             <p><small>* Group Name, Group ID, and My Role are required.</small></p>
+         </div>
+
+         <!-- Middle Column: Donation Section -->
+         <div class="donation-section-middle">
+             <h3>Support Development</h3>
+             <p>If you find this extension helpful, please consider supporting...</p>
+             <div>
+                 <a href="https://www.paypal.com/donate/?business=PXY7769HB3QWN&no_recurring=0&item_name=Thanks+for+the+support+or+appreciation+of+whichever+object%2Fcode%2Fetc+I%27ve+published.&currency_code=USD" target="_blank" rel="noopener noreferrer" class="paypal-button">Donate via PayPal</a>
+                 <br/>
+                 <img src="donate_qr.png" alt="PayPal QR Code" title="Scan for PayPal Donation" />
+             </div>
+             <p class="disclaimer">Donations are voluntary and appreciated!</p>
+         </div>
+
+         <!-- Right Column: Import/Export -->
+         <div class="io-section-right">
+             <h2>Import / Export Settings</h2>
+             <button type="button" id="exportButton">Export Groups</button>
+             <button type="button" id="importButton">Import Groups</button>
+             <input type="file" id="importFile" accept=".json" />
+             <p><small>Imports will add new groups and skip existing groups...</small></p>
+         </div>
+
+    </div> <!-- End bottom-controls-container -->
+</body>
+</html>

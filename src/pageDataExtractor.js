@@ -311,163 +311,201 @@ function extractPageContextData() {
         }
     } // --- End of extractSessionInfo ---
 
-
 // pageDataExtractor.js -> extractPageContextData -> (nested) extractCurrentGroupInfo
-
+    /**
+     * Extracts the current group's ID, Name, and Vanity name (if applicable).
+     * Prioritizes reliable methods: URL numeric ID > Specific JSON > Links.
+     * @returns {object|null} Object with {id, name, vanity} or null if essential info not found.
+     */
 function extractCurrentGroupInfo() {
-    console.log("FSA: [Helper] Trying to extract current group info..."); // Added logging
-    const url = window.location.href;
-    const groupUrlMatch = url.match(/facebook\.com\/groups\/([^/?#]+)/);
-    if (!groupUrlMatch) { console.log("FSA: [Helper] Not a group URL."); return null; }
+        console.log("FSA: [Helper] Trying to extract current group info...");
+        const url = window.location.href;
+        const path = window.location.pathname;
+        const groupUrlMatch = path.match(/^\/groups\/([^/?#]+)/);
+        if (!groupUrlMatch) { console.log("FSA: [Helper] Not a group URL pattern match."); return null; }
 
-    let groupVanity = null;
-    let groupID = 'Not Found';
-    let groupName = 'Not Found';
+        let groupVanity = null;
+        let groupID = 'Not Found';
+        let groupName = 'Not Found';
+        const potentialIdOrVanity = groupUrlMatch[1];
+        let foundID = false;
 
-    if (groupUrlMatch[1] && !/^\d+$/.test(groupUrlMatch[1])) {
-        groupVanity = groupUrlMatch[1];
-        console.log("FSA: [Helper] Group vanity found in URL:", groupVanity);
-    }
-
-    // Group ID extraction (JSON preferred)
-    const scripts = document.querySelectorAll('script[type="application/json"], script[data-sjs], script');
-    const groupIDPattern = /"groupID":"(\d+)"/;
-    // const legacyGroupIDPattern = /"group_id":(\d+)/; // Keep commented for now
-
-    let foundGroupId = false; // Flag to stop searching once found
-
-    groupLoop: // Label to break outer loop
-    for (const script of scripts) {
-        const textContent = script.textContent;
-        if (!textContent) continue;
-
-        // Prioritize specific JSON structures if known
-        try {
-            const jsonData = JSON.parse(textContent);
-            // Example - VERIFY THESE PATHS from group page source
-            const jsonGroupIdPath1 = jsonData?.data?.group?.id; // Example Path 1
-            const jsonGroupIdPath2 = jsonData?.response?.group?.id; // Example Path 2
-            // Add other known reliable paths here...
-            // const jsonGroupIdPath3 = jsonData?.some?.other?.path?.group_id;
-
-            if (jsonGroupIdPath1) {
-                groupID = jsonGroupIdPath1;
-                console.log("FSA: [Helper] GroupID found via JSON (data.group.id):", groupID);
-                foundGroupId = true; break groupLoop;
-            }
-            if (jsonGroupIdPath2) {
-                groupID = jsonGroupIdPath2;
-                console.log("FSA: [Helper] GroupID found via JSON (response.group.id):", groupID);
-                foundGroupId = true; break groupLoop;
-            }
-            // if (jsonGroupIdPath3) { ... break groupLoop; }
-
-        } catch (e) { /* Ignore JSON parse errors for this script */ }
-
-        // Regex Fallbacks (check occurrences for reliability) - ONLY IF JSON FAILED
-        // REMOVED the 'if (groupID === 'Not Found')' check here - it was preventing regex from running if JSON parse failed but didn't find ID
-        const idMatch = textContent.match(groupIDPattern);
-        if (idMatch && idMatch[1]) {
-            const occurrences = (textContent.match(new RegExp(`"${idMatch[1]}"`, 'g')) || []).length;
-            if (occurrences > 5) { // Threshold might need adjustment
-                 groupID = idMatch[1];
-                 console.log(`FSA: [Helper] GroupID found via regex ${groupIDPattern} (occurrences: ${occurrences}):`, groupID);
-                 foundGroupId = true; break groupLoop; // Found via regex, stop searching
-            }
+        // --- Step 1: Check if URL segment IS the numeric Group ID ---
+        if (/^\d{10,}$/.test(potentialIdOrVanity)) {
+            groupID = potentialIdOrVanity; console.log("FSA: [Helper] GroupID found directly in URL path:", groupID); foundID = true;
+        } else {
+            groupVanity = potentialIdOrVanity; console.log("FSA: [Helper] Group vanity found in URL path:", groupVanity);
         }
-        // Legacy pattern fallback (if needed)
-        /*
-        const legacyIdMatch = textContent.match(legacyGroupIDPattern);
-        if (legacyIdMatch && legacyIdMatch[1]) { ... }
-        */
-    } // End groupLoop
 
-    if (!foundGroupId) {
-         console.error("FSA: [Helper] GroupID extraction FAILED (JSON and Regex).");
-         return null; // Explicitly return null if ID extraction failed
-    }
+        // --- Step 2: Targeted JSON Search (If ID not in URL) ---
+        if (!foundID) {
+            console.log("FSA: [Helper] GroupID not in URL, trying targeted JSON search for vanity:", groupVanity);
+            const scripts = document.querySelectorAll('script[type="application/json"][data-sjs]');
+            jsonSearchLoop:
+            for (const script of scripts) {
+                 const textContent = script.textContent; if (!textContent) continue;
+                 try { /* ... JSON parsing and validation logic ... */
+                    const jsonData = JSON.parse(textContent);
+                    if (jsonData?.require && Array.isArray(jsonData.require)) {
+                        for (const reqItem of jsonData.require) {
+                             if (Array.isArray(reqItem) && reqItem.length > 3 && (reqItem[0].includes("ScheduledServerJS"))) {
+                                const bboxData = reqItem?.[3]?.[0]?.__bbox?.require?.[0]?.[3]?.[1]?.__bbox?.result?.data || reqItem?.[3]?.[1]?.__bbox?.result?.data || reqItem?.[3]?.[0]?.__bbox?.result?.data;
+                                if (bboxData?.group) {
+                                    const groupData = bboxData.group;
+                                    const currentVanity = groupData.vanity || groupData.group_address;
+                                    const currentId = groupData.id;
+                                    const currentName = groupData.name;
+                                    if (currentId && /^\d{10,}$/.test(currentId) && currentVanity && currentVanity.toLowerCase() === groupVanity.toLowerCase()) {
+                                         groupID = currentId;
+                                         if (currentName) groupName = currentName;
+                                         console.log(`FSA: [Helper] GroupID (${groupID}) VALIDATED via targeted JSON matching vanity '${groupVanity}'.`);
+                                         foundID = true; break jsonSearchLoop;
+                                    }
+                                }
+                             }
+                        }
+                    }
+                 } catch (e) {}
+             } // End jsonSearchLoop
+             if (!foundID) console.log("FSA: [Helper] Targeted JSON validation failed.");
+        }
 
-    // Group Name extraction (H1 preferred on group pages)
-    try { /* ... H1 logic ... */ } catch(e) { /* ... */ }
-    // ... existing name extraction ...
-     try {
-        const mainArea = document.querySelector('[role="main"]');
-        const h1Element = mainArea?.querySelector('h1');
-        if (h1Element?.textContent) {
-             const potentialName = h1Element.textContent.replace(/\s+/g, ' ').trim();
-             if (potentialName && potentialName.length > 1) { // Simple check
-                 groupName = potentialName;
-                 console.log("FSA: [Helper] Group Name found via H1:", groupName);
-             }
-        } // Add JSON fallback for name if needed
-    } catch(e) { console.error("FSA: [Helper] Error extracting group name:", e); }
+        // --- Step 3: Broad Link Scan Fallback (If ID still not found) ---
+        if (!foundID) {
+            console.log("FSA: [Helper] Targeted JSON failed. Trying broad link scan fallback...");
+            try {
+                const allLinks = document.querySelectorAll('a[href^="/groups/"]'); // Get all group links
+                const idCounts = {};
+                const idPattern = /\/groups\/(?:[\w.-]+\/)?(\d{10,})/; // Match /groups/VANITY_OR_ID/NUMERIC_ID or /groups/NUMERIC_ID/
+
+                for (const link of allLinks) {
+                    const href = link.getAttribute('href');
+                    if (!href) continue;
+                    const match = href.match(idPattern);
+                    if (match && match[1]) {
+                         idCounts[match[1]] = (idCounts[match[1]] || 0) + 1;
+                    }
+                }
+
+                let potentialIdFromLinks = null;
+                let highestCount = 0;
+                for (const id in idCounts) {
+                    if (idCounts[id] > highestCount) {
+                        highestCount = idCounts[id];
+                        potentialIdFromLinks = id;
+                    }
+                }
+
+                const MIN_LINK_OCCURRENCES = 3; // Require at least 3 links pointing to the same ID
+                if (potentialIdFromLinks && highestCount >= MIN_LINK_OCCURRENCES) {
+                    groupID = potentialIdFromLinks;
+                    foundID = true;
+                    console.log(`FSA: [Helper] GroupID (${groupID}) found via broad link scan fallback (most frequent ID found ${highestCount} times, threshold: ${MIN_LINK_OCCURRENCES}).`);
+                } else {
+                     console.log(`FSA: [Helper] Broad link scan did not yield a confident GroupID (highest count ${highestCount} < ${MIN_LINK_OCCURRENCES}).`);
+                     // console.log("FSA DEBUG: Link counts:", idCounts); // Optional: Log counts for debugging
+                }
+
+            } catch (e) {
+                 console.error("FSA: [Helper] Error during broad link scan:", e);
+            }
+        } // End Link Scan Fallback
 
 
-    // Only return success object if groupID was found
-    const groupResult = { id: groupID, name: decodeStringIfNeeded(groupName), vanity: groupVanity };
-    console.log("FSA: [Helper] extractCurrentGroupInfo SUCCEEDED. Returning:", groupResult);
-    return groupResult;
+        // --- Step 4: Group Name extraction (If not found via JSON earlier) ---
+        if (groupName === 'Not Found') {
+            console.log("FSA: [Helper] Trying H1 for Group Name (after small delay)..."); // Update log
+            // console.log("FSA: [Helper] Trying H1 for Group Name...");
+             try {
+                 const mainArea = document.querySelector('[role="main"]');
+                 let h1Element = mainArea?.querySelector('h1[class*="x1heor9g"]'); // Try specific class
+                 if (!h1Element) h1Element = mainArea?.querySelector('h1'); // Fallback
+                 if (h1Element?.textContent) {
+                      const potentialName = h1Element.textContent.replace(/\s+/g, ' ').trim();
+                      if (potentialName && potentialName.length > 1 && potentialName.length < 150) {
+                          groupName = potentialName;
+                          console.log("FSA: [Helper] Group Name found via H1:", groupName);
+                      }
+                 } else { console.log("FSA: [Helper] H1 for group name not found or empty after delay."); } // Update log
+             } catch(e) { console.error("FSA: [Helper] Error querying H1:", e); } // Add error log
+        }
 
-} // --- End of extractCurrentGroupInfo ---
+        // --- Final Check & Return ---
+        if (!foundID || groupID === 'Not Found') {
+           console.error("FSA: CRITICAL - Failed to determine Group ID reliably after all checks.");
+           return null; // Return null if ID still not found
+        }
 
+        const groupResult = { id: groupID, name: decodeStringIfNeeded(groupName), vanity: groupVanity };
+        console.log("FSA: [Helper] extractCurrentGroupInfo SUCCEEDED. Returning:", groupResult);
+        return groupResult;
+
+    } // --- End of extractCurrentGroupInfo ---
+    
     // --- END HELPER DEFINITIONS ---
 
 
-    // --- START MAIN LOGIC ---
+    // --- START MAIN DISPATCHER LOGIC ---
     console.log("FSA Inject: Determining page type...");
     const url = window.location.href;
     const path = window.location.pathname;
-
     const isGroupPage = /^\/groups\//.test(path);
     const isGroupUserProfile = /^\/groups\/[^/]+\/user\//.test(path);
-    const isKnownGroupSubpage = /^\/groups\/[^/]+\/(?:members|files|photos|videos|about|discussion|events|search|media|reels)\b/.test(path);
-    const isBaseUrl = (path === '/' || path === '/home.php' || path === '/index.php');
+    const isKnownGroupSubpage = /^\/groups\/[^/]+\/(?:members|files|photos|videos|about|events|search|media|reels|community_rules|admin_activities|settings|member-requests|pending_posts|reported_content|group_quality)\b/.test(path);
+    const isBaseUrl = (path === '/' || path === '/home.php' || path === '/index.php' || !path);
+    // Identify main discussion/feed page - it's a group page but NOT user profile and NOT a known subpage with a specific path segment after the ID/Vanity
+    const isGroupDiscussion = isGroupPage && !isGroupUserProfile && !isKnownGroupSubpage;
 
-    let result = { type: 'error', message: 'Unknown page type determination logic error' }; // Default to error
+    let result = { type: 'error', message: 'Internal logic error' };
 
-    if (isBaseUrl) {
-         console.log("FSA Inject: Detected base Facebook URL. Skipping detailed extraction.");
-         result = { type: 'group_subpage', data: null, message: 'Base URL - Info N/A' }; // Use message for clarity
+    try {
+        if (isBaseUrl) {
+            console.log("FSA Inject: Detected base Facebook URL.");
+            result = { type: 'other', data: null, message: 'Base URL - Info N/A' };
 
-    } else if (isGroupUserProfile) {
-         console.log("FSA Inject: Detected group user profile page.");
-         const userInfo = {
-             userID: extractUserID(),
-             userName: extractUserName(), // Decoding happens below
-             userVanity: extractUserVanity()
-         };
-         const sessionInfo = extractSessionInfo();
-         userInfo.userName = decodeStringIfNeeded(userInfo.userName); // Decode name here
-         console.log("FSA Inject: UserInfo extracted (Group User Page):", userInfo);
-         console.log("FSA Inject: SessionInfo extracted (Group User Page):", { l:sessionInfo.lsd != 'Not Found', d:sessionInfo.fb_dtsg != 'Not Found', a: sessionInfo.adminUserId != 'Not Found'}); // Log status only
-         result = { type: 'user', data: { ...userInfo, ...sessionInfo } };
+        } else if (isGroupUserProfile) {
+            console.log("FSA Inject: Detected group user profile page.");
+            const userInfo = { userID: extractUserID(), userName: 'Not Found', userVanity: extractUserVanity() };
+            userInfo.userName = decodeStringIfNeeded(extractUserName());
+            const sessionInfo = extractSessionInfo();
+            console.log("FSA Inject: UserInfo extracted (Group User Page):", userInfo);
+            console.log("FSA Inject: SessionInfo extracted (Group User Page):", { fb_dtsg: sessionInfo.fb_dtsg !== 'Not Found', adminUserId: sessionInfo.adminUserId !== 'Not Found' });
+            result = { type: 'user', data: { ...userInfo, ...sessionInfo } };
 
-    } else if (isKnownGroupSubpage) {
-        console.log("FSA Inject: Detected known group sub-page. Skipping detailed extraction.");
-        result = { type: 'group_subpage', data: null, message: 'Group Sub-Page - Info N/A' };
+        } else if (isKnownGroupSubpage) {
+            console.log("FSA Inject: Detected known group sub-page (non-discussion).");
+            const sessionInfo = extractSessionInfo();
+            result = { type: 'group_subpage', data: { ...sessionInfo }, message: 'Group Sub-Page - Group Info N/A' };
 
-    } else if (isGroupPage) {
-        console.log("FSA Inject: Detected main group page. Attempting group info extraction.");
-        const groupInfo = extractCurrentGroupInfo();
-        if (groupInfo) {
-            result = { type: 'group', data: groupInfo };
-        } else {
-             console.warn("FSA Inject: On main group page but failed to extract group info.");
-             result = { type: 'error', message: 'Could not extract group info' };
+        } else if (isGroupDiscussion) { // Main group page
+            console.log("FSA Inject: Detected main group/discussion page.");
+            const groupInfo = extractCurrentGroupInfo();
+            const sessionInfo = extractSessionInfo();
+            if (groupInfo) { // Check if groupInfo extraction was successful
+                console.log("FSA Inject: GroupInfo extracted:", groupInfo);
+                console.log("FSA Inject: SessionInfo extracted:", { l:sessionInfo.lsd != 'Not Found', d:sessionInfo.fb_dtsg != 'Not Found', a: sessionInfo.adminUserId != 'Not Found'});
+                result = { type: 'group', data: { ...groupInfo, ...sessionInfo } }; // Combine Group and Session
+            } else {
+                 console.error("FSA Inject: On main group page but failed to extract essential group info (ID).");
+                 result = { type: 'error', message: 'Could not extract group ID', data: { ...sessionInfo } }; // Return error but include session info
+            }
+        } else { // Assume Standard User Profile or other unknown page type
+            console.log("FSA Inject: Assuming standard user profile page (or other non-group page).");
+            const userInfo = { userID: extractUserID(), userName: 'Not Found', userVanity: extractUserVanity() };
+            userInfo.userName = decodeStringIfNeeded(extractUserName());
+            const sessionInfo = extractSessionInfo();
+            console.log("FSA Inject: UserInfo extracted (Standard User Page/Other):", userInfo);
+            console.log("FSA Inject: SessionInfo extracted (Standard User Page/Other):", { l:sessionInfo.lsd != 'Not Found', d:sessionInfo.fb_dtsg != 'Not Found', a: sessionInfo.adminUserId != 'Not Found'});
+            if(userInfo.userID !== 'Not Found' && userInfo.userID?.length > 5) { // If we found a user ID, treat as user page
+                 result = { type: 'user', data: { ...userInfo, ...sessionInfo } };
+             } else { // Otherwise, treat as 'other'
+                 console.warn("FSA Inject: Could not reliably identify page type (no valid user or group ID found).");
+                 result = { type: 'other', data: { ...sessionInfo }, message: 'Could not determine page type' };
+             }
         }
-    } else {
-        // --- Assume Standard User Profile ---
-        console.log("FSA Inject: Detected standard user profile page (or other).");
-         const userInfo = {
-             userID: extractUserID(),
-             userName: extractUserName(), // Decoding happens below
-             userVanity: extractUserVanity()
-         };
-         const sessionInfo = extractSessionInfo();
-         userInfo.userName = decodeStringIfNeeded(userInfo.userName); // Decode name here
-         console.log("FSA Inject: UserInfo extracted (Standard User Page):", userInfo);
-          console.log("FSA Inject: SessionInfo extracted (Standard User Page):", { l:sessionInfo.lsd != 'Not Found', d:sessionInfo.fb_dtsg != 'Not Found', a: sessionInfo.adminUserId != 'Not Found'}); // Log status only
-         result = { type: 'user', data: { ...userInfo, ...sessionInfo } };
+    } catch (e) {
+         console.error("FSA Inject: Error in main dispatcher logic:", e);
+         result = { type: 'error', message: 'Internal script error during dispatch' };
     }
 
     console.log("FSA Inject: Final result being returned:", result);
@@ -475,4 +513,5 @@ function extractCurrentGroupInfo() {
     // --- END MAIN LOGIC ---
 
 } // <-- End of extractPageContextData definition
+
 // --- END OF FILE pageDataExtractor.js ---

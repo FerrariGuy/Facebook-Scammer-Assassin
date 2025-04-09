@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Facebook Scammer Assassin",
-  "version": "2.3",
+  "version": "2.5.0",
   "description": "Extracts Facebook user info and provides tools to block them from groups.",
   "action": {
     "default_popup": "popup.html",
@@ -27,13 +27,17 @@
         "options.js",
         "Sortable.min.js",
         "browser-polyfill.min.js",
-        "shrug_icon.png" // <-- Add the image filename here
+        "shrug_icon.png",
+        "donate_qr.png"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [ "https://*.facebook.com/*" ]
     }
   ],
   "background": {
-    "scripts": ["service-worker.js"] // <-- CHANGE HERE
+    // "service_worker": "service-worker.js" // Comment out V3 key
+     // Using "scripts" key despite MV3 because AMO linter rejects "service_worker" key (as of 2025-04-05).
+    "scripts": ["service-worker.js"], // Try V2 key again
+    "persistent": false // MV2 often needed this; maybe helps linter? Usually not needed for MV3 SW.
   },
   "options_page": "options.html",
 

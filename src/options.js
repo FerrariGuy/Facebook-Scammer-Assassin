@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const groupTable = document.getElementById('groupTable');
   const addRowButton = document.getElementById('addRowButton');
   const saveButton = document.getElementById('saveButton');
+  const visibleSaveButton = document.getElementById('visibleSaveButton'); // Visible button (type="button")
   
   const exportButton = document.getElementById('exportButton');
   const importButton = document.getElementById('importButton');
@@ -51,13 +52,14 @@ document.addEventListener('DOMContentLoaded', function() {
       currentGroups = groupsArray || []; // Update the tracked array
       if (currentGroups.length > 0) {
           currentGroups.forEach(group => {
-            const effectiveChecked = (group.role === 'moderator') ? false : (typeof group.checked === 'boolean' ? group.checked : true);
+            //const effectiveChecked = (group.role === 'moderator') ? false : (typeof group.checked === 'boolean' ? group.checked : true); //OLD LOGIC
+            const effectiveChecked = typeof group.checked === 'boolean' ? group.checked : true; // NEW: Just use stored value or default true
             addGroupRow(
               group.groupName || '',
               group.groupNName || '',
               group.groupID || '',
               group.groupURL || '',
-              effectiveChecked,
+              effectiveChecked, // Pass the corrected value
               group.role || 'admin'
             );
           });
@@ -81,15 +83,91 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
 
+    // --- ADD THIS SECTION (Logic moved from the removed inline script) ---
+    if (visibleSaveButton && saveButton) {
+        // 1. Link Visible Button click to Hidden Submit Button click
+        visibleSaveButton.addEventListener('click', function() {
+            console.log("FSA Options: Visible Save Button clicked, triggering hidden button click.");
+            saveButton.click(); // Programmatically click the hidden submit button
+        });
+
+        // 2. Mirror 'yellow' class from Hidden Button to Visible Button
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.attributeName === 'class') {
+                    // console.log("FSA Options: Hidden save button class changed, checking yellow."); // Optional verbose log
+                    if (saveButton.classList.contains('yellow')) {
+                        visibleSaveButton.classList.add('yellow');
+                    } else {
+                        visibleSaveButton.classList.remove('yellow');
+                    }
+                }
+            });
+        });
+        observer.observe(saveButton, { attributes: true }); // Watch the hidden button for class changes
+
+        // Apply initial state check *after* observer is set up
+        if (saveButton.classList.contains('yellow')) {
+            visibleSaveButton.classList.add('yellow');
+        }
+
+    } else {
+        console.error("FSA Options: Critical error - Could not find #saveButton or #visibleSaveButton elements!");
+    }
+    // --- END of added section ---  
+  
+    // --- Make sure existing event listeners target the HIDDEN saveButton for 'yellow' ---
+
+    // Inside addGroupRow function:
+    // Ensure all listeners that call `saveButton.classList.add('yellow')` are indeed targeting
+    // the 'saveButton' (hidden one), NOT 'visibleSaveButton'.
+    // Example snippets to verify/add logging within addGroupRow:
+
+    /* Inside the inputs.forEach loop in addGroupRow:
+        const markUnsaved = () => {
+            console.log("FSA Options: Input changed, marking hidden save button yellow."); // Add log
+            saveButton.classList.add('yellow'); // Correctly targets hidden button
+            revalidateStyle();
+        };
+    */
+    /* Inside the roleSelect listener in addGroupRow:
+        roleSelect.addEventListener('change', function() {
+            console.log("FSA Options: Role changed, marking hidden save button yellow."); // Add log
+            saveButton.classList.add('yellow'); // Correctly targets hidden button
+            //... rest of logic ...
+        });
+    */
+    /* Inside the deleteButton listener in addGroupRow:
+        deleteButton.addEventListener('click', function() {
+            if (confirm('Are you sure...?')) {
+                newRow.remove();
+                console.log("FSA Options: Row deleted, marking hidden save button yellow."); // Add log
+                saveButton.classList.add('yellow'); // Correctly targets hidden button
+            }
+        });
+    */
+
+    // Inside initializeSortable function:
+    /* Ensure the onEnd callback targets the hidden saveButton:
+        onEnd: function(evt) {
+           console.log("FSA Options: SortableJS drag ended, marking hidden save button yellow."); // Add log
+           saveButton.classList.add('yellow'); // Correctly targets hidden button
+           groupTableBody.querySelectorAll('tr').forEach(updateRowStyle);
+        }
+    */
+
+    // Add Row Button listener (should target hidden button)
+    if (addRowButton && saveButton) {
+         addRowButton.addEventListener('click', () => {
+             addGroupRow('', '', '', '', true, 'admin'); // Add the row UI
+             console.log("FSA Options: Add Row button clicked, marking hidden save button yellow."); // Add log
+             saveButton.classList.add('yellow'); // Mark hidden button; observer mirrors it
+         });
+     }  
+  
   // Initial Load
   loadGroups();
   
-  // --- Event listener for adding a new group row ---
-  addRowButton.addEventListener('click', function() {
-    addGroupRow('', '', '', '', true, 'admin'); // New rows default to Admin, checked=true
-    saveButton.classList.add('yellow');
-  });
-
   // --- Event listener for form submission (saving the settings) ---
   groupForm.addEventListener('submit', function(event) {
     event.preventDefault();
@@ -169,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
           console.log("Settings saved successfully!");
           currentGroups = groupsToSave; // --- UPDATE local state AFTER successful save ---
-          alert('Settings saved successfully!');
+          //alert('Settings saved successfully!');
           saveButton.classList.remove('yellow');
           ///groupTableBody.querySelectorAll('tr').forEach(updateRowStyle); // Ensure styles reflect saved state
           chrome.runtime.sendMessage({ action: 'refreshPopup' }).catch(e => {});
@@ -181,17 +259,18 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Function to add a new group row dynamically ---
 function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedState, role) {
     const newRow = document.createElement('tr');
-    const isModerator = role === 'moderator';
-    // Determine the ACTUAL checked state based on BOTH role and stored value
-    const actualCheckedState = !isModerator && initialCheckedState;
-    const isDisabled = isModerator; // Checkbox is disabled if Moderator
+    ///const isModerator = role === 'moderator';
+    // Determine the ACTUAL checked state based ONLY on stored/initial value
+    // const actualCheckedState = !isModerator && initialCheckedState; // OLD LOGIC
+    const actualCheckedState = typeof initialCheckedState === 'boolean' ? initialCheckedState : true; // NEW: Use stored/default value directly
+    //const isDisabled = isModerator; // Checkbox is disabled if Moderator (removed)
 
     // Use textContent for the status display based on the actual state
     const statusText = actualCheckedState ? 'Included' : 'Excluded';
 
     // Use the actual state to determine if the 'checked' attribute should be present
     const checkedAttribute = actualCheckedState ? 'checked' : '';
-    const disabledAttribute = isDisabled ? 'disabled' : '';
+    //const disabledAttribute = isDisabled ? 'disabled' : ''; (removed)   // ${disabledAttribute} = rem0ved attribute from <td class="includeCheckboxCell"><input type="checkbox" class="includeCheckbox" ${checkedAttribute}></td> 
 
     newRow.innerHTML = `
       <td class="drag-handle" style="cursor: move; text-align: center; vertical-align: middle;" title="Drag to reorder">
@@ -200,7 +279,7 @@ function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedSta
           </svg>
       </td>
       <td class="includeStatus">${statusText}</td>
-      <td class="includeCheckboxCell"><input type="checkbox" class="includeCheckbox" ${checkedAttribute} ${disabledAttribute}></td>
+      <td class="includeCheckboxCell"><input type="checkbox" class="includeCheckbox" ${checkedAttribute}></td> 
       <td><input type="text" class="nameInput" value="${groupName || ''}" required placeholder="Group Name"></td>
       <td><input type="text" class="nicknameInput" value="${groupNName || ''}" placeholder="Nickname (Optional)"></td>
       <td><input type="text" class="groupIDInput" value="${groupID || ''}" required pattern="\\d+" title="Must be numbers only" placeholder="Group ID (Numbers only)"></td>
@@ -226,6 +305,7 @@ function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedSta
     const inputs = newRow.querySelectorAll('input[type="text"], input[type="checkbox"], select');
 
     includeCheckbox.addEventListener('change', function() {
+        console.log("FSA Options: Include checkbox changed, marking hidden save button yellow."); // Log added
         includeStatus.textContent = this.checked ? 'Included' : 'Excluded';
         saveButton.classList.add('yellow');
     });
@@ -233,30 +313,32 @@ function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedSta
     deleteButton.addEventListener('click', function() {
         if (confirm('Are you sure you want to delete this group row?')) { // Added confirmation
             newRow.remove();
+            console.log("FSA Options: Row deleted, marking hidden save button yellow."); // Log added
             saveButton.classList.add('yellow');
         }
     });
 
     roleSelect.addEventListener('change', function() {
+        console.log("FSA Options: Role changed, marking hidden save button yellow."); // Log added
         saveButton.classList.add('yellow');
-        const isMod = this.value === 'moderator';
-        const currentIncludeCheckbox = newRow.querySelector('.includeCheckbox');
-        const currentIncludeStatus = newRow.querySelector('.includeStatus');
+        //const isMod = this.value === 'moderator';
+        //const currentIncludeCheckbox = newRow.querySelector('.includeCheckbox');
+        //const currentIncludeStatus = newRow.querySelector('.includeStatus');
 
-        currentIncludeCheckbox.disabled = isMod;
-        if (isMod) {
-            currentIncludeCheckbox.checked = false; // Force uncheck if mod
-        }
+        //currentIncludeCheckbox.disabled = isMod;
+        //if (isMod) {
+        //    currentIncludeCheckbox.checked = false; // Force uncheck if mod
+        //}
         // Update status text based on the *current* checked state
-        currentIncludeStatus.textContent = currentIncludeCheckbox.checked ? 'Included' : 'Excluded';
+        //currentIncludeStatus.textContent = currentIncludeCheckbox.checked ? 'Included' : 'Excluded';
         updateRowStyle(newRow); // Update background color/invalid state
     });
 
+    // --- Input Listener (Seems fine, ensure it marks saveButton yellow) ---
     inputs.forEach(input => {
-        const revalidateStyle = () => {
-             updateRowStyle(newRow);
-        };
+        const revalidateStyle = () => {updateRowStyle(newRow);};
         const markUnsaved = () => {
+            // console.log("FSA Options: Input changed, marking hidden save button yellow."); // Optional Log
             saveButton.classList.add('yellow');
             revalidateStyle(); // Also revalidate on change
         };
@@ -264,7 +346,7 @@ function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedSta
         // Use 'input' for text fields for immediate feedback, 'change' for select/checkbox
         if (input.type === 'text' || input.tagName === 'TEXTAREA') {
              input.addEventListener('input', markUnsaved);
-        } else {
+        } else if (input !== includeCheckbox && input !== roleSelect) { // Avoid double-adding listener for checkbox/select
              input.addEventListener('change', markUnsaved);
         }
         // Initial validation style check
@@ -413,7 +495,8 @@ function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedSta
                       groupID: (importedGroup.groupID || '').trim(),
                       groupURL: (importedGroup.groupURL || '').trim(),
                       // Re-apply logic: moderator is always unchecked
-                      checked: importedGroup.role !== 'moderator' && (typeof importedGroup.checked === 'boolean' ? importedGroup.checked : true),
+                      // checked: importedGroup.role !== 'moderator' && (typeof importedGroup.checked === 'boolean' ? importedGroup.checked : true), // OLD LOGIC
+                      checked: typeof importedGroup.checked === 'boolean' ? importedGroup.checked : true, // NEW: Use imported value or default true
                       role: importedGroup.role === 'moderator' ? 'moderator' : 'admin' // Default to admin if role invalid
                   };
 
@@ -444,16 +527,12 @@ function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedSta
           });
 
       }; // End reader.onload
-
       reader.onerror = function(e) {
            console.error("Error reading import file:", e);
            alert("Error reading the selected file.");
            importFileInput.value = ''; // Reset file input
       };
-
       reader.readAsText(file); // Read the file
   }); // --- End Import ---
-
-
 }); // End DOMContentLoaded
 // --- END OF FILE options.js ---

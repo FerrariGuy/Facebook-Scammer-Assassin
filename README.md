@@ -38,8 +38,8 @@ A browser extension for Firefox & Chrome (Manifest V3) designed to help Facebook
     
 ## Disclaimer
     * Important Notice & Disclaimer: Facebook Scammer Assassin relies on accessing Facebook's underlying page data and internal GraphQL API to provide its functionality. This approach is inherently fragile and may break partially or completely if Facebook modifies its website code or APIs.
-    *Additionally, please be aware that using tools that interact with Facebook in non-standard ways could be interpreted as a violation of their Terms of Service. While this tool aims to replicate actions achievable through the normal UI (blocking users from groups where you have permission), there is always a potential risk associated with using third-party extensions that interface with Facebook's platform.
-    *By using this extension, you acknowledge these risks and agree to use it responsibly and at your own discretion. The developer is not responsible for any issues, account restrictions, or other consequences that may arise from using this tool.
+    * Additionally, please be aware that using tools that interact with Facebook in non-standard ways could be interpreted as a violation of their Terms of Service. While this tool aims to replicate actions achievable through the normal UI (blocking users from groups where you have permission), there is always a potential risk associated with using third-party extensions that interface with Facebook's platform.
+    * By using this extension, you acknowledge these risks and agree to use it responsibly and at your own discretion. The developer is not responsible for any issues, account restrictions, or other consequences that may arise from using this tool.
 
 ## Screenshots
 

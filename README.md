@@ -44,16 +44,20 @@ A browser extension for Firefox & Chrome (Manifest V3) designed to help Facebook
 ## Screenshots
 
 *Example: Popup on User Profile*
-`![Popup - User Profile](images/screenshot_popup_user.png)`
+
+![Popup - User Profile](https://raw.githubusercontent.com/FerrariGuy/Facebook-Scammer-Assassin/main/images/screenshot_popup_user.png)
 
 *Example: Popup on Group Page (showing "Add to Options")*
-`![Popup - Group Page](images/screenshot_popup_group.png)`
+
+![Popup - Group Page](https://raw.githubusercontent.com/FerrariGuy/Facebook-Scammer-Assassin/main/images/screenshot_popup_group.png)
 
 *Example: Popup needing reload*
-`![Popup - Reload Prompt](images/screenshot_popup_reload.png)`
+
+![Popup - Reload Prompt](https://raw.githubusercontent.com/FerrariGuy/Facebook-Scammer-Assassin/main/images/screenshot_popup_reload.png)
 
 *Example: Options Page*
-`![Options Page](images/screenshot_options.png)`
+
+![Options Page](https://raw.githubusercontent.com/FerrariGuy/Facebook-Scammer-Assassin/main/images/screenshot_options.png)
 
 
 ## Installation

@@ -35,13 +35,24 @@ function executeGraphQLBlock(scammerUserID, groupID, fb_dtsg, jazoest, lsd, admi
         "user_id": scammerUserID,
         "action_source": "MEMBER_LIST", // Or maybe "PROFILE_BLOCK_BUTTON"? Start with "MEMBER_LIST".
         "client_mutation_id": "1", // Can likely be static
+
         // --- Optional flags (can be controlled by checkboxes in options later) ---
-        "should_apply_block_to_later_created_accounts": true,
-        "should_delete_comments": true,
-        "should_delete_posts": true
+            //"should_apply_block_to_later_created_accounts": true,
+            //"should_delete_comments": true,
+            //"should_delete_posts": true
         // "should_decline_all_pending_posts": true, // Requires different permissions?
         // "should_remove_all_content_in_group": true // Potentially dangerous, use with caution
-      },
+
+        // *** Use new names, set defaults based on captures ***
+        "apply_to_later_created_accounts": true, // Default TRUE (from spam capture)
+        "delete_recent_comments": true,
+        "delete_recent_posts": true,
+        "apply_to_other_groups_you_manage": false, // Default FALSE
+        "delete_recent_invites": true,
+        "delete_recent_poll_options": true,
+        "delete_recent_reactions": true,
+        "delete_recent_story_threads": true,
+        },
       "memberID": scammerUserID, // Often repeated outside input
       "scale": 1
     };
@@ -70,7 +81,7 @@ function executeGraphQLBlock(scammerUserID, groupID, fb_dtsg, jazoest, lsd, admi
        "fb_api_req_friendly_name": "useGroupsCometBlockUserMutation", // Specific to the action
        "variables": JSON.stringify(variables),
        "server_timestamps": "true", // Often true
-       "doc_id": "28758548190457960" // The critical ID for this specific mutation
+        "doc_id": "7708594669264548" // The critical ID for this specific mutation
     };
 
     const formData = new FormData();

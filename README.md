@@ -7,9 +7,12 @@
 
 A browser extension for Firefox & Chrome (Manifest V3) designed to help Facebook group administrators and moderators quickly identify and block potential scammers, spammers, or problematic users directly from their profile page within the context of the groups they manage.
 
+**Current Version: 2.5.1**
+
+
 **Note:** This extension is currently distributed directly via GitHub Releases, not the official browser stores.
 
-## Key Features (v2.5.0)
+## Key Features (Stable since v2.5.0)
 
 *   **User Info Scraping:** Extracts Target User ID, Name (including accessory names), and Vanity URL (when available) from the currently viewed Facebook profile.
 *   **Group Info Scraping:** Detects when viewing a main Facebook Group page and extracts the Group Name and Group ID, useful for configuration.
@@ -62,10 +65,10 @@ A browser extension for Firefox & Chrome (Manifest V3) designed to help Facebook
 
 ## Installation
 
-Download the appropriate file for your browser from the **[Latest Release Page](https://github.com/FerrariGuy/facebook-scammer-assassin/releases/latest)** 
+Download the appropriate file for your browser from the **[Latest Release Page](https://github.com/FerrariGuy/facebook-scammer-assassin/releases/latest)**. **Always use the latest version available.**
 
 *   **Firefox:**
-    1.  Download the `.xpi` file (e.g., `facebook_scammer_assassin-2.5.0-firefox.xpi`).
+    1.  Download the `.xpi` file (e.g., `facebook_scammer_assassin-2.5.1-firefox.xpi`).
     2.  Open Firefox, navigate to `about:addons`.
     3.  Click the gear icon near the top-right -> "Install Add-on From File...".
     4.  Select the downloaded `.xpi` file.
@@ -73,7 +76,7 @@ Download the appropriate file for your browser from the **[Latest Release Page](
     *   ***Note:** If an unsigned `.zip` file is provided instead of a signed `.xpi`, you must load it temporarily via `about:debugging` -> "Load Temporary Add-on..." -> select the `manifest.json` inside the unzipped folder. The add-on will unload when Firefox closes.*
     
 *   **Chrome / Edge:**
-    1.  Download the `.zip` file (e.g., `facebook_scammer_assassin-2.5.0-chrome.zip`).
+    1.  Download the `.zip` file (e.g., `facebook_scammer_assassin-2.5.1-chrome.zip`).
     2.  **Unzip** the downloaded file into a dedicated folder (e.g., `fsa_chrome_v2.5.0`). **Do not delete this folder after installation.**
     3.  Open Chrome/Edge and navigate to `chrome://extensions`.
     4.  Enable **"Developer mode"** (toggle in the top right).
@@ -116,6 +119,9 @@ Download the appropriate file for your browser from the **[Latest Release Page](
 *   **"Act as Page":** Functionality when acting as a Page is not guaranteed or tested.
 *   **Data Scraping Timing:** Occasionally, User or Group Name might not be detected on the first load. Reloading the page and reopening the popup typically resolves this.
 *   **Error Handling:** Basic error handling is included, but complex Facebook errors might not always be handled gracefully.
+
+## Changelog
+See the [CHANGELOG.md](CHANGELOG.md) file for details on changes between versions. 
 
 ## Contributing
 

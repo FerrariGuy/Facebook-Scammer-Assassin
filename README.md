@@ -120,6 +120,20 @@ Download the appropriate file for your browser from the **[Latest Release Page](
 *   **Data Scraping Timing:** Occasionally, User or Group Name might not be detected on the first load. Reloading the page and reopening the popup typically resolves this.
 *   **Error Handling:** Basic error handling is included, but complex Facebook errors might not always be handled gracefully.
 
+### A Note on How This Extension Works & Its Fragility
+
+This extension provides powerful features by interacting directly with Facebook's internal (undocumented) GraphQL API. This is the same system the Facebook website uses to perform actions like blocking a user and deleting their recent content.
+
+**Why does this matter?**
+
+Because these internal systems are not public, Facebook can change them at any time without warning. This means the extension is inherently **fragile**. A feature, especially the core "Block" function, might suddenly stop working.
+
+The key parameters that can change include:
+*   **`doc_id`**: A unique identifier for a specific action (like "block a group member").
+*   **GraphQL Variables**: The structure of the data sent to perform the action.
+
+When the extension breaks, it requires a manual process of "reverse-engineering" the new API calls using the browser's developer tools. If you are technically inclined and notice a feature has broken, feel free to investigate the `Network` tab for `/api/graphql/` requests and open an issue with your findings.
+
 ## Changelog
 See the [CHANGELOG.md](CHANGELOG.md) file for details on changes between versions. 
 

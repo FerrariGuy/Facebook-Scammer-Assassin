@@ -7,7 +7,7 @@
 
 A browser extension for Firefox & Chrome (Manifest V3) designed to help Facebook group administrators and moderators quickly identify and block potential scammers, spammers, or problematic users directly from their profile page within the context of the groups they manage.
 
-**Current Version: 2.5.1**
+**Current Version: 2.5.3**
 
 
 **Note:** This extension is currently distributed directly via GitHub Releases, not the official browser stores.

@@ -1,190 +1,187 @@
-// --- START OF FILE graphQLBlocker.js --- 
+// --- START OF FILE graphQLBlocker.js ---
 // --- Injectable GraphQL Function ---
 // NOTE: This runs in the page's context, not the extension's context.
-// It cannot directly access variables from the outer scope unless passed as args.
+
 function executeGraphQLBlock(scammerUserID, groupID, fb_dtsg, jazoest, lsd, adminUserId) {
-    console.log("FSA (Injected): executeGraphQLBlock called with:",
-      { scammerUserID, groupID, fb_dtsg: fb_dtsg ? '******' : 'Not Found', jazoest, lsd: lsd ? '******' : 'Not Found', adminUserId } // Mask tokens in log
-    );
 
-    // Basic validation of inputs received from the popup
-    if (!scammerUserID || scammerUserID === 'Not Found' ||
-        !groupID ||
-        !fb_dtsg || fb_dtsg === 'Not Found' ||
-       // !jazoest || // Jazoest might be less critical, allow 'Not Found' initially
-       // !lsd || // Often same as fb_dtsg
-        !adminUserId || adminUserId === 'Not Found') {
-      const errorMsg = "FSA (Injected): Missing critical data for blocking.";
-      console.error(errorMsg, { scammerUserID, groupID, fb_dtsg_found: !!fb_dtsg, jazoest_found: !!jazoest, lsd_found: !!lsd, adminUserId });
-      // Send failure message back to popup
-      chrome.runtime.sendMessage({
-          action: 'blockResult',
-          success: false,
-          groupId: groupID, // Include groupID to identify the button
-          userId: scammerUserID,
-          error: errorMsg
-      }).catch(e => console.error("FSA (Injected): Error sending message back to popup:", e));
-      return Promise.reject(errorMsg); // Reject the promise returned by executeScript
-    }
+    // --- START: Configuration Constants ---
+    // These values are prone to change when Facebook updates its API.
+    // By defining them here, we can update them easily in one place.
+    const BLOCK_DOC_ID = "25160809070205097"; // As of Nov 2025, for useGroupsCometBlockUserMutation.
+    const FRIENDLY_NAME = "useGroupsCometBlockUserMutation";
+    const ACTION_SOURCE = "MEMBER_LIST"; // The context from which the block action is initiated.
+    // --- END: Configuration Constants ---
 
-    const variables = {
-      "groupID": groupID,
-      "input": {
-        "actor_id": adminUserId,
-        "group_id": groupID, // Yes, often repeated
-        "user_id": scammerUserID,
-        "action_source": "MEMBER_LIST", // Or maybe "PROFILE_BLOCK_BUTTON"? Start with "MEMBER_LIST".
-        "client_mutation_id": "1", // Can likely be static
+    /**
+     * Helper function to construct and send the actual fetch request to Facebook's GraphQL API.
+     * @param {boolean} isAggressiveBlock - If true, enables all flags for deleting content and blocking future accounts.
+     * @returns {Promise<Response>} The fetch promise.
+     */
+    const performBlockRequest = (isAggressiveBlock) => {
+        console.log(`FSA (Injected): Performing block request (Aggressive: ${isAggressiveBlock})`);
 
-        // --- Optional flags (can be controlled by checkboxes in options later) ---
-            //"should_apply_block_to_later_created_accounts": true,
-            //"should_delete_comments": true,
-            //"should_delete_posts": true
-        // "should_decline_all_pending_posts": true, // Requires different permissions?
-        // "should_remove_all_content_in_group": true // Potentially dangerous, use with caution
+        // The 'variables' object contains the specific data for the mutation.
+        const variables = {
+            "groupID": groupID,
+            "input": {
+                "actor_id": adminUserId,
+                "group_id": groupID,
+                "user_id": scammerUserID,
+                "action_source": ACTION_SOURCE,
+                "client_mutation_id": isAggressiveBlock ? "1" : "2", // Differentiate aggressive vs. simple block calls
 
-        // *** Use new names, set defaults based on captures ***
-        "apply_to_later_created_accounts": true, // Default TRUE (from spam capture)
-        "delete_recent_comments": true,
-        "delete_recent_posts": true,
-        "apply_to_other_groups_you_manage": false, // Default FALSE
-        "delete_recent_invites": true,
-        "delete_recent_poll_options": true,
-        "delete_recent_reactions": true,
-        "delete_recent_story_threads": true,
-        },
-      "memberID": scammerUserID, // Often repeated outside input
-      "scale": 1
-    };
+                // These flags are for the "aggressive" block. They are set to false for the "simple" block.
+                "apply_to_later_created_accounts": isAggressiveBlock,
+                "delete_recent_comments": isAggressiveBlock,
+                "delete_recent_posts": isAggressiveBlock,
+                "apply_to_other_groups_you_manage": false, // This feature is unreliable and kept off.
+                "delete_recent_invites": isAggressiveBlock,
+                "delete_recent_poll_options": isAggressiveBlock,
+                "delete_recent_reactions": isAggressiveBlock,
+                "delete_recent_story_threads": isAggressiveBlock,
+            },
+            "memberID": scammerUserID,
+            "scale": 1,
+        };
 
-    const bodyParams = {
-       "av": adminUserId,
-       "__user": adminUserId,
-       "__a": "1", // Minimal necessary?
-       "__req": "a", // Minimal necessary? May need 'g', 'h', etc. Requires testing. Start simple.
-      // "__hs": "", // Often required but dynamic, try without first
-       "dpr": window.devicePixelRatio || 1, // Get device pixel ratio
-      // "__ccg": "GOOD", // Common value
-      // "__rev": "", // Dynamic, try without
-      // "__s": "", // Dynamic, try without
-      // "__hsi": "", // Dynamic, try without
-      // "__dyn": "", // Very dynamic/complex, definitely try without first
-      // "__csr": "", // Dynamic, try without
-       "__comet_req": "15", // Common value, test if needed
-       "fb_dtsg": fb_dtsg,
-       "jazoest": jazoest || '', // Send empty if not found/needed initially
-       "lsd": lsd || fb_dtsg, // Use fb_dtsg as fallback for lsd
-      // "__spin_r": "", // Dynamic, try without
-      // "__spin_b": "trunk", // Often static
-      // "__spin_t": "", // Dynamic, try without
-       "fb_api_caller_class": "RelayModern", // Seems common
-       "fb_api_req_friendly_name": "useGroupsCometBlockUserMutation", // Specific to the action
-       "variables": JSON.stringify(variables),
-       "server_timestamps": "true", // Often true
-        "doc_id": "7708594669264548" // The critical ID for this specific mutation
-    };
+        // These are the main form-data parameters for the GraphQL endpoint.
+        const bodyParams = {
+           "av": adminUserId,
+           "__user": adminUserId,
+           "__a": "1",
+           "__req": "a",
+           "dpr": window.devicePixelRatio || 1,
+           "__comet_req": "15",
+           "fb_dtsg": fb_dtsg,
+           "jazoest": jazoest || '',
+           "lsd": lsd || fb_dtsg,
+           "fb_api_caller_class": "RelayModern",
+           "fb_api_req_friendly_name": FRIENDLY_NAME,
+           "variables": JSON.stringify(variables),
+           "server_timestamps": "true",
+           "doc_id": BLOCK_DOC_ID
+        };
 
-    const formData = new FormData();
-    for (const key in bodyParams) {
-        // Only append if the value is not explicitly undefined or null. Allow empty strings for now.
-        if (bodyParams.hasOwnProperty(key) && bodyParams[key] !== undefined && bodyParams[key] !== null) {
-             formData.append(key, bodyParams[key]);
+        const formData = new FormData();
+        for (const key in bodyParams) {
+            if (bodyParams.hasOwnProperty(key) && bodyParams[key] !== undefined && bodyParams[key] !== null) {
+                formData.append(key, bodyParams[key]);
+            }
         }
+
+        console.log("FSA (Injected): Sending GraphQL request with params:", bodyParams);
+
+        return fetch('/api/graphql/', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+            headers: {
+                'Sec-Fetch-Site': 'same-origin',
+                'X-FB-LSD': lsd || fb_dtsg
+            }
+        });
+    }; // --- End of performBlockRequest helper function ---
+
+    // --- Main Logic Flow ---
+    console.log("FSA (Injected): Starting block process for:", { scammerUserID, groupID });
+
+    if (!scammerUserID || !groupID || !fb_dtsg || !adminUserId) {
+        const errorMessage = "FSA (Injected): Validation failed. Missing one or more required IDs for blocking.";
+        console.error(errorMessage, { scammerUserID, groupID, fb_dtsg, adminUserId });
+        return Promise.reject(errorMessage);
     }
 
+    // --- Primary Strategy: Try Aggressive Block First, then Fallback to Simple Block ---
+    // This handles cases where the target is a Facebook Page, which cannot have "future accounts" blocked.
+    return performBlockRequest(true)
+        .then(response => {
+            if (!response.ok) {
+                // Try to get more info from the response body before throwing.
+                return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status} - ${text.substring(0, 100)}`); });
+            }
+            return response.text();
+        })
+        .then(text => {
+            // Facebook's JSON responses are often prefixed with this string, which needs to be removed.
+            const jsonPrefix = 'for (;;);';
+            let jsonData = {};
+            try {
+                jsonData = JSON.parse(text.startsWith(jsonPrefix) ? text.substring(jsonPrefix.length) : text);
+            } catch (e) {
+                console.error("FSA (Injected): Failed to parse JSON response.", e, text.substring(0, 500));
+                throw new Error("Failed to parse server response.");
+            }
 
-    console.log("FSA (Injected): Sending GraphQL block request with form data:", /*formData // Can't directly log FormData contents easily*/ bodyParams); // Log the params object instead for inspection
+            console.log("FSA (Injected): Parsed response from AGGRESSIVE block:", jsonData);
 
-    return fetch('/api/graphql/', { // Use relative path
-      method: 'POST',
-      body: formData,
-      credentials: 'include', // Crucial: Include cookies for authentication
-      headers: {
-        // 'Content-Type' is set automatically by fetch for FormData to multipart/form-data
-        'Sec-Fetch-Site': 'same-origin', // Good practice security header
-         'X-FB-LSD': lsd || fb_dtsg // Required header
-        // Add other minimal headers like 'Accept-Language' etc. ONLY if testing reveals they are needed
-      }
-    })
-    .then(response => {
-      console.log("FSA (Injected): Received response status:", response.status, response.statusText);
-      if (!response.ok) {
-        console.error("FSA (Injected): Network response was not ok.", response);
-        // Attempt to get more info from the response body if possible
-        return response.text().then(text => {
-            console.error("FSA (Injected): Error response body:", text.substring(0, 500)); // Log beginning of error text
-            throw new Error(`HTTP error! status: ${response.status} ${response.statusText} - ${text.substring(0, 100)}`); // Include start of text
+            const isSuccess = jsonData.data?.group_block_user && !jsonData.errors;
+            // A "retryable" error is one where Facebook rejects the aggressive flags (e.g., for a Page).
+            const isRetryableError = (jsonData.data?.group_block_user === null && jsonData.errors) || jsonData.errors?.some(e => e.message?.includes('field_exception') || e.code === 1357006);
+
+            if (isSuccess) {
+                console.log("FSA (Injected): Aggressive block successful.");
+                return { success: true, responseData: jsonData };
+            }
+
+            if (!isRetryableError) {
+                console.error("FSA (Injected): Aggressive block failed with a non-retryable error.");
+                throw new Error(jsonData.errors?.[0]?.message || "Aggressive block failed.");
+            }
+
+            // --- Fallback Step: Retry with a Simple Block ---
+            console.warn("FSA (Injected): Aggressive block failed, likely due to flags (e.g., for a Page). Retrying with a simple block.");
+            return performBlockRequest(false)
+                .then(retryResponse => {
+                    if (!retryResponse.ok) {
+                         return retryResponse.text().then(text => { throw new Error(`HTTP error on RETRY! status: ${retryResponse.status} - ${text.substring(0, 100)}`); });
+                    }
+                    return retryResponse.text();
+                })
+                .then(retryText => {
+                     let retryJsonData = {};
+                      try {
+                         retryJsonData = JSON.parse(retryText.startsWith(jsonPrefix) ? retryText.substring(jsonPrefix.length) : retryText);
+                      } catch (e) {
+                         console.error("FSA (Injected): Failed to parse JSON on retry.", e, retryText.substring(0, 500));
+                         throw new Error("Failed to parse server response on retry.");
+                      }
+
+                     console.log("FSA (Injected): Parsed response from SIMPLE block retry:", retryJsonData);
+
+                     if (retryJsonData.data?.group_block_user && !retryJsonData.errors) {
+                         console.log("FSA (Injected): Simple block retry successful.");
+                         return { success: true, responseData: retryJsonData, retried: true };
+                     } else {
+                         console.error("FSA (Injected): Simple block retry also failed.");
+                         throw new Error(retryJsonData.errors?.[0]?.message || "Simple block retry failed.");
+                     }
+                });
+        })
+        .then(({ success, responseData, retried = false }) => {
+            // --- Final Success Handler ---
+            // This block runs after either the aggressive or simple block succeeds.
+            console.log(`FSA (Injected): Block process finished. Success: ${success}. Retried: ${retried}`);
+            chrome.runtime.sendMessage({
+                action: 'blockResult',
+                success: true,
+                groupId: groupID,
+                userId: scammerUserID,
+                error: null,
+                responseData: responseData
+            }).catch(e => console.error("FSA (Injected): Error sending success message:", e));
+        })
+        .catch(error => {
+            // --- Final Catch-All Error Handler ---
+            // This catches errors from validation, network issues, or failed block attempts.
+            console.error('FSA (Injected): Error during block process:', error);
+            chrome.runtime.sendMessage({
+                action: 'blockResult',
+                success: false,
+                groupId: groupID,
+                userId: scammerUserID,
+                error: error.message || "Unknown fetch error"
+            }).catch(e => console.error("FSA (Injected): Error sending final failure message:", e));
         });
-      }
-      // Try to parse as JSON, but handle cases where it might not be
-      return response.text().then(text => {
-          // Facebook often wraps JSON in a for loop for security reasons
-          const jsonPrefix = 'for (;;);';
-          let jsonData = null;
-          let parseError = null;
-          if (text.startsWith(jsonPrefix)) {
-              text = text.substring(jsonPrefix.length);
-          }
-           try {
-               jsonData = JSON.parse(text);
-           } catch(e) {
-               console.warn("FSA (Injected): Response was not valid JSON after potential prefix removal. Text:", text.substring(0, 500)); // Log more text
-               parseError = e;
-               // Even if parsing fails, check for plain text success/error indicators if FB changes format
-               if (text.includes("errorSummary") || text.includes("error_msg")) { // Example check
-                   throw new Error(`Facebook returned an error page/text: ${text.substring(0,150)}`);
-               }
-               // Assume failure if parsing fails and no clear text indicator found
-                throw new Error(`Failed to parse response: ${e.message}`);
-           }
-          return jsonData; // Return parsed JSON
-      });
-    })
-    .then(data => {
-      console.log("FSA (Injected): Parsed GraphQL response data:", data);
-      // Analyze the 'data' object structure to determine success.
-      let isSuccess = false;
-      let errorMessage = 'Block failed, unknown response structure.';
-
-      if (data && data.errors && data.errors.length > 0) {
-            console.error("FSA (Injected): GraphQL operation returned errors:", data.errors);
-            errorMessage = data.errors[0]?.message || JSON.stringify(data.errors);
-            isSuccess = false;
-      } else if (data && data.data /* && check specific success field if known, e.g., data.data.group_block_member */ ) {
-          console.log("FSA (Injected): Block successful (no errors found in response).");
-          isSuccess = true;
-      } else if (data && Object.keys(data).length === 0 && !data.errors) {
-           console.log("FSA (Injected): Block successful (empty data object and no errors).");
-           isSuccess = true;
-      } else {
-           console.warn("FSA (Injected): Block response structure unclear, assuming failure.", data);
-           errorMessage = `Block response structure unclear: ${JSON.stringify(data).substring(0,100)}`;
-           isSuccess = false;
-      }
-
-      // Send message back to popup
-      chrome.runtime.sendMessage({
-          action: 'blockResult',
-          success: isSuccess,
-          groupId: groupID,
-          userId: scammerUserID,
-          error: isSuccess ? null : errorMessage,
-          responseData: data
-      }).catch(e => console.error("FSA (Injected): Error sending success/failure message back:", e));
-
-      return { success: isSuccess, error: isSuccess ? null : errorMessage };
-
-    })
-    .catch(error => {
-      console.error('FSA (Injected): Error during block fetch or processing:', error);
-      chrome.runtime.sendMessage({
-          action: 'blockResult',
-          success: false,
-          groupId: groupID,
-          userId: scammerUserID,
-          error: error.message || "Unknown fetch error"
-      }).catch(e => console.error("FSA (Injected): Error sending error message back:", e));
-       return Promise.reject({ success: false, error: error.message || "Unknown fetch error" });
-    });
-  }
+}
 // --- End of Injectable Function ---
+// --- END OF FILE graphQLBlocker.js ---

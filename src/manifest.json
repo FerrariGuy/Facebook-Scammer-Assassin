@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Facebook Scammer Assassin",
-  "version": "2.5.1",
+  "version": "2.5.3",
   "description": "Extracts Facebook user info and provides tools to block them from groups.",
   "action": {
     "default_popup": "popup.html",
@@ -44,9 +44,14 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "scammer-assassin@ferrariguy.github.com",
-      "strict_min_version": "128.0"
+      "strict_min_version": "128.0",
+      "data_collection": {
+        "private_data": false,
+        "personal_information": false,
+        "usage_data": false
+      }
     }
-  }, // <-- Comma already removed here
+  },
 
   "icons": {
       "16": "icon16.png",

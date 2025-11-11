@@ -5,11 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const addRowButton = document.getElementById('addRowButton');
   const saveButton = document.getElementById('saveButton');
   const visibleSaveButton = document.getElementById('visibleSaveButton'); // Visible button (type="button")
-  
+
   const exportButton = document.getElementById('exportButton');
   const importButton = document.getElementById('importButton');
   const importFileInput = document.getElementById('importFile');
-  
+
   let groupTableBody = groupTable.querySelector('tbody');
   if (!groupTableBody) {
        groupTableBody = document.createElement('tbody');
@@ -46,56 +46,52 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
    // --- Function to RELOAD the entire table from an array ---
-  // Useful after import or initial load
   function reloadTableFromArray(groupsArray) {
       groupTableBody.innerHTML = ''; // Clear existing rows
       currentGroups = groupsArray || []; // Update the tracked array
       if (currentGroups.length > 0) {
           currentGroups.forEach(group => {
-            //const effectiveChecked = (group.role === 'moderator') ? false : (typeof group.checked === 'boolean' ? group.checked : true); //OLD LOGIC
-            const effectiveChecked = typeof group.checked === 'boolean' ? group.checked : true; // NEW: Just use stored value or default true
+            const effectiveChecked = typeof group.checked === 'boolean' ? group.checked : true;
             addGroupRow(
               group.groupName || '',
               group.groupNName || '',
               group.groupID || '',
               group.groupURL || '',
-              effectiveChecked, // Pass the corrected value
+              effectiveChecked,
               group.role || 'admin'
             );
           });
-          groupTableBody.querySelectorAll('tr').forEach(updateRowStyle); // Update styles for all rows
+          groupTableBody.querySelectorAll('tr').forEach(updateRowStyle);
       }
-      initializeSortable(); // Re-initialize sortable after table reload
-      console.log(`Table reloaded with ${currentGroups.length} groups.`);
+      initializeSortable();
+      console.log(`FSA (Options): Table reloaded with ${currentGroups.length} groups.`);
   }
 
   // --- Load saved group settings ---
   function loadGroups() {
       chrome.storage.sync.get('groups', function(data) {
           if (chrome.runtime.lastError) {
-              console.error("Error loading groups:", chrome.runtime.lastError);
+              console.error("FSA (Options): Error loading groups:", chrome.runtime.lastError);
               alert("Error loading settings: " + chrome.runtime.lastError.message);
-              reloadTableFromArray([]); // Load empty on error
+              reloadTableFromArray([]);
               return;
           }
-          console.log("Loaded groups:", data.groups);
-          reloadTableFromArray(data.groups); // Use the reload function
+          console.log("FSA (Options): Loaded groups:", data.groups);
+          reloadTableFromArray(data.groups);
       });
   }
 
-    // --- ADD THIS SECTION (Logic moved from the removed inline script) ---
+    // Link the visible save button to the hidden form submit button
     if (visibleSaveButton && saveButton) {
-        // 1. Link Visible Button click to Hidden Submit Button click
         visibleSaveButton.addEventListener('click', function() {
-            console.log("FSA Options: Visible Save Button clicked, triggering hidden button click.");
-            saveButton.click(); // Programmatically click the hidden submit button
+            console.log("FSA (Options): Visible Save Button clicked, triggering hidden button click.");
+            saveButton.click();
         });
 
-        // 2. Mirror 'yellow' class from Hidden Button to Visible Button
+        // Mirror the 'yellow' (unsaved changes) class from the hidden button to the visible one
         const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
                 if (mutation.attributeName === 'class') {
-                    // console.log("FSA Options: Hidden save button class changed, checking yellow."); // Optional verbose log
                     if (saveButton.classList.contains('yellow')) {
                         visibleSaveButton.classList.add('yellow');
                     } else {
@@ -104,123 +100,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
-        observer.observe(saveButton, { attributes: true }); // Watch the hidden button for class changes
+        observer.observe(saveButton, { attributes: true });
 
-        // Apply initial state check *after* observer is set up
+        // Apply initial state
         if (saveButton.classList.contains('yellow')) {
             visibleSaveButton.classList.add('yellow');
         }
 
     } else {
-        console.error("FSA Options: Critical error - Could not find #saveButton or #visibleSaveButton elements!");
+        console.error("FSA (Options): Critical error - Could not find #saveButton or #visibleSaveButton elements!");
     }
-    // --- END of added section ---  
-  
-    // --- Make sure existing event listeners target the HIDDEN saveButton for 'yellow' ---
 
-    // Inside addGroupRow function:
-    // Ensure all listeners that call `saveButton.classList.add('yellow')` are indeed targeting
-    // the 'saveButton' (hidden one), NOT 'visibleSaveButton'.
-    // Example snippets to verify/add logging within addGroupRow:
-
-    /* Inside the inputs.forEach loop in addGroupRow:
-        const markUnsaved = () => {
-            console.log("FSA Options: Input changed, marking hidden save button yellow."); // Add log
-            saveButton.classList.add('yellow'); // Correctly targets hidden button
-            revalidateStyle();
-        };
-    */
-    /* Inside the roleSelect listener in addGroupRow:
-        roleSelect.addEventListener('change', function() {
-            console.log("FSA Options: Role changed, marking hidden save button yellow."); // Add log
-            saveButton.classList.add('yellow'); // Correctly targets hidden button
-            //... rest of logic ...
-        });
-    */
-    /* Inside the deleteButton listener in addGroupRow:
-        deleteButton.addEventListener('click', function() {
-            if (confirm('Are you sure...?')) {
-                newRow.remove();
-                console.log("FSA Options: Row deleted, marking hidden save button yellow."); // Add log
-                saveButton.classList.add('yellow'); // Correctly targets hidden button
-            }
-        });
-    */
-
-    // Inside initializeSortable function:
-    /* Ensure the onEnd callback targets the hidden saveButton:
-        onEnd: function(evt) {
-           console.log("FSA Options: SortableJS drag ended, marking hidden save button yellow."); // Add log
-           saveButton.classList.add('yellow'); // Correctly targets hidden button
-           groupTableBody.querySelectorAll('tr').forEach(updateRowStyle);
-        }
-    */
-
-    // Add Row Button listener (should target hidden button)
+    // --- Event listener for adding a new row ---
     if (addRowButton && saveButton) {
          addRowButton.addEventListener('click', () => {
-             addGroupRow('', '', '', '', true, 'admin'); // Add the row UI
-             console.log("FSA Options: Add Row button clicked, marking hidden save button yellow."); // Add log
-             saveButton.classList.add('yellow'); // Mark hidden button; observer mirrors it
+             addGroupRow('', '', '', '', true, 'admin');
+             console.log("FSA (Options): Add Row button clicked, marking save button yellow.");
+             saveButton.classList.add('yellow'); // Mark changes as unsaved
          });
-     }  
-  
+     }
+
   // Initial Load
   loadGroups();
-  
+
   // --- Event listener for form submission (saving the settings) ---
   groupForm.addEventListener('submit', function(event) {
     event.preventDefault();
     try {
        saveGroupSettings();
     } catch (error) {
-       console.error("Error during save process:", error);
+       console.error("FSA (Options): Error during save process:", error);
        alert("An error occurred while trying to save. Please check console for details.");
     }
   });
 
   // --- Function to save settings ---
   function saveGroupSettings() {
-    console.log("Saving settings...");
-    const groupsToSave = []; 
+    console.log("FSA (Options): Saving settings...");
+    const groupsToSave = [];
     const rows = groupTableBody.querySelectorAll('tr');
     let validationFailedOverall = false;
 
-    console.log(`Found ${rows.length} rows in tbody to process.`);
-
     rows.forEach((row, index) => {
-        console.log(`Processing row ${index}`);
         const includeCheckbox = row.querySelector('.includeCheckbox');
         const nameInput = row.querySelector('.nameInput');
         const nicknameInput = row.querySelector('.nicknameInput');
         const groupIDInput = row.querySelector('.groupIDInput');
         const groupURLInput = row.querySelector('.groupURLInput');
         const roleSelect = row.querySelector('.roleSelect');
-        // ... validation checks ...
+
         if (!includeCheckbox || !nameInput || !groupIDInput || !roleSelect) {
-            console.error(`Row ${index} is missing required input elements. Skipping.`);
-            updateRowStyle(row); // Mark visually by calling updateRowStyle
-            validationFailedOverall = true;
-            return;
+            console.error(`FSA (Options): Row ${index} is missing required input elements. Skipping.`);
+            validationFailedOverall = true; return;
         }
 
-        let rowIsValid = true;
-        if (!nameInput.value.trim() || !groupIDInput.value.trim()) {
-            console.warn(`Row ${index} is missing Group Name or Group ID.`);
-            rowIsValid = false;
-        } else if (!/^\d+$/.test(groupIDInput.value.trim())) {
-             console.warn(`Row ${index} has invalid Group ID format (must be numbers only).`);
-             rowIsValid = false;
-        }
-
-        updateRowStyle(row); // Update style based on current validity and role
+        let rowIsValid = !(!nameInput.value.trim() || !groupIDInput.value.trim() || !/^\d+$/.test(groupIDInput.value.trim()));
+        updateRowStyle(row); // Update style based on current validity
 
         if (!rowIsValid) {
              validationFailedOverall = true;
-             // return; // Optionally skip adding invalid rows to the save data
         }
 
-        // Save the actual checked state from the checkbox (will be false if disabled)
         const group = {
             groupName: nameInput.value.trim(),
             groupNName: nicknameInput.value.trim(),
@@ -230,26 +170,23 @@ document.addEventListener('DOMContentLoaded', function() {
             role: roleSelect.value
         };
         groupsToSave.push(group);
-        console.log(`Row ${index} data:`, group);
     });
 
     if (validationFailedOverall) {
          alert("Some rows have missing or invalid data (highlighted in red). Please correct them before saving.");
-         // return; // Uncomment to prevent saving if any row is invalid
+         return; // Prevent saving if any row is invalid
     }
 
-    console.log("Final groups array to save:", groupsToSave);
+    console.log("FSA (Options): Final groups array to save:", groupsToSave);
 
      chrome.storage.sync.set({ groups: groupsToSave }, function() {
       if (chrome.runtime.lastError) {
-          console.error("Error saving groups:", chrome.runtime.lastError);
+          console.error("FSA (Options): Error saving groups:", chrome.runtime.lastError);
           alert('Error saving settings: ' + chrome.runtime.lastError.message);
       } else {
-          console.log("Settings saved successfully!");
-          currentGroups = groupsToSave; // --- UPDATE local state AFTER successful save ---
-          //alert('Settings saved successfully!');
+          console.log("FSA (Options): Settings saved successfully!");
+          currentGroups = groupsToSave;
           saveButton.classList.remove('yellow');
-          ///groupTableBody.querySelectorAll('tr').forEach(updateRowStyle); // Ensure styles reflect saved state
           chrome.runtime.sendMessage({ action: 'refreshPopup' }).catch(e => {});
       }
     });
@@ -259,31 +196,18 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Function to add a new group row dynamically ---
 function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedState, role) {
     const newRow = document.createElement('tr');
-    ///const isModerator = role === 'moderator';
-    // Determine the ACTUAL checked state based ONLY on stored/initial value
-    // const actualCheckedState = !isModerator && initialCheckedState; // OLD LOGIC
-    const actualCheckedState = typeof initialCheckedState === 'boolean' ? initialCheckedState : true; // NEW: Use stored/default value directly
-    //const isDisabled = isModerator; // Checkbox is disabled if Moderator (removed)
-
-    // Use textContent for the status display based on the actual state
+    const actualCheckedState = typeof initialCheckedState === 'boolean' ? initialCheckedState : true;
     const statusText = actualCheckedState ? 'Included' : 'Excluded';
-
-    // Use the actual state to determine if the 'checked' attribute should be present
     const checkedAttribute = actualCheckedState ? 'checked' : '';
-    //const disabledAttribute = isDisabled ? 'disabled' : ''; (removed)   // ${disabledAttribute} = rem0ved attribute from <td class="includeCheckboxCell"><input type="checkbox" class="includeCheckbox" ${checkedAttribute}></td> 
 
     newRow.innerHTML = `
-      <td class="drag-handle" style="cursor: move; text-align: center; vertical-align: middle;" title="Drag to reorder">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16" style="vertical-align: middle;">
-            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
-          </svg>
-      </td>
+      <td class="drag-handle" title="Drag to reorder">::</td>
       <td class="includeStatus">${statusText}</td>
-      <td class="includeCheckboxCell"><input type="checkbox" class="includeCheckbox" ${checkedAttribute}></td> 
+      <td class="includeCheckboxCell"><input type="checkbox" class="includeCheckbox" ${checkedAttribute}></td>
       <td><input type="text" class="nameInput" value="${groupName || ''}" required placeholder="Group Name"></td>
       <td><input type="text" class="nicknameInput" value="${groupNName || ''}" placeholder="Nickname (Optional)"></td>
       <td><input type="text" class="groupIDInput" value="${groupID || ''}" required pattern="\\d+" title="Must be numbers only" placeholder="Group ID (Numbers only)"></td>
-      <td> <!-- Role Dropdown Cell -->
+      <td>
           <select class="roleSelect" title="Your role in this group">
               <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
               <option value="moderator" ${role === 'moderator' ? 'selected' : ''}>Moderator</option>
@@ -293,7 +217,6 @@ function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedSta
       <td class="deleteRow"><button type="button" class="deleteButton">Delete</button></td>
     `;
 
-    // Ensure the rest of the function (event listeners) remains the same
     groupTableBody.appendChild(newRow);
     updateRowStyle(newRow); // Set initial style
 
@@ -304,235 +227,148 @@ function addGroupRow(groupName, groupNName, groupID, groupURL, initialCheckedSta
     const roleSelect = newRow.querySelector('.roleSelect');
     const inputs = newRow.querySelectorAll('input[type="text"], input[type="checkbox"], select');
 
-    includeCheckbox.addEventListener('change', function() {
-        console.log("FSA Options: Include checkbox changed, marking hidden save button yellow."); // Log added
-        includeStatus.textContent = this.checked ? 'Included' : 'Excluded';
+    const markUnsaved = () => {
         saveButton.classList.add('yellow');
+        updateRowStyle(newRow);
+    };
+
+    includeCheckbox.addEventListener('change', function() {
+        includeStatus.textContent = this.checked ? 'Included' : 'Excluded';
+        markUnsaved();
     });
 
     deleteButton.addEventListener('click', function() {
-        if (confirm('Are you sure you want to delete this group row?')) { // Added confirmation
+        if (confirm('Are you sure you want to delete this group row?')) {
             newRow.remove();
-            console.log("FSA Options: Row deleted, marking hidden save button yellow."); // Log added
-            saveButton.classList.add('yellow');
+            markUnsaved();
         }
     });
 
-    roleSelect.addEventListener('change', function() {
-        console.log("FSA Options: Role changed, marking hidden save button yellow."); // Log added
-        saveButton.classList.add('yellow');
-        //const isMod = this.value === 'moderator';
-        //const currentIncludeCheckbox = newRow.querySelector('.includeCheckbox');
-        //const currentIncludeStatus = newRow.querySelector('.includeStatus');
-
-        //currentIncludeCheckbox.disabled = isMod;
-        //if (isMod) {
-        //    currentIncludeCheckbox.checked = false; // Force uncheck if mod
-        //}
-        // Update status text based on the *current* checked state
-        //currentIncludeStatus.textContent = currentIncludeCheckbox.checked ? 'Included' : 'Excluded';
-        updateRowStyle(newRow); // Update background color/invalid state
+    roleSelect.addEventListener('change', () => {
+        markUnsaved();
     });
 
-    // --- Input Listener (Seems fine, ensure it marks saveButton yellow) ---
     inputs.forEach(input => {
-        const revalidateStyle = () => {updateRowStyle(newRow);};
-        const markUnsaved = () => {
-            // console.log("FSA Options: Input changed, marking hidden save button yellow."); // Optional Log
-            saveButton.classList.add('yellow');
-            revalidateStyle(); // Also revalidate on change
-        };
-
-        // Use 'input' for text fields for immediate feedback, 'change' for select/checkbox
-        if (input.type === 'text' || input.tagName === 'TEXTAREA') {
-             input.addEventListener('input', markUnsaved);
-        } else if (input !== includeCheckbox && input !== roleSelect) { // Avoid double-adding listener for checkbox/select
-             input.addEventListener('change', markUnsaved);
+        // Use 'input' for text fields for immediate feedback, 'change' for others
+        const eventType = (input.type === 'text' || input.tagName === 'TEXTAREA') ? 'input' : 'change';
+        if (input !== includeCheckbox && input !== roleSelect) { // Avoid double-adding listeners
+             input.addEventListener(eventType, markUnsaved);
         }
-        // Initial validation style check
-        // revalidateStyle(); // Already called after appending row
     });
 }
 
-   // --- Initialize SortableJS ---
+   // --- Initialize SortableJS for drag-and-drop reordering ---
    function initializeSortable() {
-       if (sortableInstance) {
-           sortableInstance.destroy();
-           sortableInstance = null;
-           console.log("Previous SortableJS instance destroyed.");
-       }
+       if (sortableInstance) sortableInstance.destroy();
 
        if (typeof Sortable !== 'undefined' && groupTableBody) {
            sortableInstance = new Sortable(groupTableBody, {
                animation: 150,
                handle: '.drag-handle',
-               ghostClass: 'sortable-ghost',
-               chosenClass: 'sortable-chosen',
-               dragClass: 'sortable-drag',
-                onEnd: function(evt) {
+               onEnd: function(evt) {
                    saveButton.classList.add('yellow');
-                   console.log("SortableJS drag ended.");
-                   // Update styles based on new order
-                   groupTableBody.querySelectorAll('tr').forEach(updateRowStyle);
+                   console.log("FSA (Options): Row reordered, marking unsaved.");
                }
            });
-           console.log("SortableJS initialized on tbody.");
+           console.log("FSA (Options): SortableJS initialized.");
        } else {
-           if (typeof Sortable === 'undefined') {
-                console.error("SortableJS library not found. Drag-and-drop reordering will not work.");
-           }
-           if (!groupTableBody) {
-               console.error("Cannot initialize SortableJS: tbody element not found.");
-           }
+           console.error("FSA (Options): SortableJS library not found or tbody is missing.");
        }
    }
 
 
-  // --- NEW Export Functionality ---
+  // --- Export Functionality ---
   exportButton.addEventListener('click', function() {
-      // Use the currentGroups array which should reflect the latest saved state
-      // Or fetch fresh from storage to be absolutely sure
       chrome.storage.sync.get('groups', function(data) {
-          if (chrome.runtime.lastError || !data.groups) {
-              alert('Could not load groups to export. Please save first.');
-              console.error("Export Error:", chrome.runtime.lastError || "No groups data found");
+          if (chrome.runtime.lastError || !data.groups || data.groups.length === 0) {
+              alert('Could not load groups to export or no groups are configured.');
+              console.error("FSA (Options): Export Error:", chrome.runtime.lastError || "No groups data found");
               return;
           }
-
-          const groupsToExport = data.groups;
-          if (!Array.isArray(groupsToExport)) {
-               alert('Stored group data is invalid. Cannot export.');
-               console.error("Export Error: Stored data is not an array.");
-               return;
-          }
-
-          if (groupsToExport.length === 0) {
-              alert("There are no groups configured to export.");
-              return;
-          }
-
           try {
-              const jsonString = JSON.stringify(groupsToExport, null, 2); // Pretty print JSON
+              const jsonString = JSON.stringify(data.groups, null, 2);
               const blob = new Blob([jsonString], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
               const link = document.createElement('a');
-              const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
               link.href = url;
-              link.download = `fsa_groups_backup_${timestamp}.json`; // Suggest filename
-              document.body.appendChild(link); // Required for Firefox
+              link.download = `fsa_groups_backup_${new Date().toISOString().slice(0, 10)}.json`;
+              document.body.appendChild(link);
               link.click();
-              document.body.removeChild(link); // Clean up
-              URL.revokeObjectURL(url); // Clean up blob URL
-              console.log("Export successful.");
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+              console.log("FSA (Options): Export successful.");
           } catch (error) {
-              console.error("Error during export process:", error);
-              alert("An error occurred during export. Check console for details.");
+              console.error("FSA (Options): Error during export process:", error);
+              alert("An error occurred during export.");
           }
       });
-  }); // --- End Export ---
-
-
-  // --- NEW Import Functionality ---
-  importButton.addEventListener('click', function() {
-      // Trigger the hidden file input
-      importFileInput.click();
   });
+
+
+  // --- Import Functionality ---
+  importButton.addEventListener('click', () => importFileInput.click());
 
   importFileInput.addEventListener('change', function(event) {
       const file = event.target.files[0];
-      if (!file) {
-          console.log("No file selected for import.");
-          return;
-      }
+      if (!file) return;
 
-      console.log(`Importing file: ${file.name}`);
       const reader = new FileReader();
-
       reader.onload = function(e) {
           let importedGroups;
           try {
               importedGroups = JSON.parse(e.target.result);
-              console.log("Parsed imported data:", importedGroups);
-
-              if (!Array.isArray(importedGroups)) {
-                  throw new Error("Imported file does not contain a valid group array.");
+              if (!Array.isArray(importedGroups) || !importedGroups.every(item => 'groupID' in item && 'groupName' in item)) {
+                  throw new Error("Imported file is not a valid group array or contains invalid objects.");
               }
-
-              // Basic validation of imported objects (check for essential keys)
-              const isValidStructure = importedGroups.every(item =>
-                  typeof item === 'object' && item !== null && 'groupID' in item && 'groupName' in item && 'role' in item
-              );
-              if (!isValidStructure) {
-                  throw new Error("Imported data contains objects missing required keys (groupID, groupName, role).");
-              }
-
           } catch (error) {
-              console.error("Error parsing or validating import file:", error);
+              console.error("FSA (Options): Error parsing or validating import file:", error);
               alert(`Import failed: ${error.message}`);
-              importFileInput.value = ''; // Reset file input
+              importFileInput.value = '';
               return;
           }
 
-          // Merge imported groups with current groups (skip duplicates by groupID)
           chrome.storage.sync.get('groups', function(data) {
               if (chrome.runtime.lastError) {
                   alert("Could not load current groups to merge import data.");
-                  console.error("Import merge error:", chrome.runtime.lastError);
-                  importFileInput.value = ''; // Reset file input
                   return;
               }
-
               const existingGroups = data.groups || [];
               const existingGroupIDs = new Set(existingGroups.map(g => g.groupID));
               let addedCount = 0;
               let skippedCount = 0;
 
               importedGroups.forEach(importedGroup => {
-                  // Normalize imported data slightly (trim strings, ensure boolean 'checked')
-                  const cleanGroup = {
-                      groupName: (importedGroup.groupName || '').trim(),
-                      groupNName: (importedGroup.groupNName || '').trim(),
-                      groupID: (importedGroup.groupID || '').trim(),
-                      groupURL: (importedGroup.groupURL || '').trim(),
-                      // Re-apply logic: moderator is always unchecked
-                      // checked: importedGroup.role !== 'moderator' && (typeof importedGroup.checked === 'boolean' ? importedGroup.checked : true), // OLD LOGIC
-                      checked: typeof importedGroup.checked === 'boolean' ? importedGroup.checked : true, // NEW: Use imported value or default true
-                      role: importedGroup.role === 'moderator' ? 'moderator' : 'admin' // Default to admin if role invalid
-                  };
-
-                  // Skip if invalid GroupID or already exists
-                  if (!cleanGroup.groupID || !/^\d+$/.test(cleanGroup.groupID) || existingGroupIDs.has(cleanGroup.groupID)) {
-                      skippedCount++;
-                  } else {
-                      existingGroups.push(cleanGroup);
-                      existingGroupIDs.add(cleanGroup.groupID); // Add to set to prevent duplicates within the import file itself
+                  const cleanGroupID = (importedGroup.groupID || '').trim();
+                  if (cleanGroupID && !existingGroupIDs.has(cleanGroupID)) {
+                      existingGroups.push({
+                          groupName: (importedGroup.groupName || '').trim(),
+                          groupNName: (importedGroup.groupNName || '').trim(),
+                          groupID: cleanGroupID,
+                          groupURL: (importedGroup.groupURL || '').trim(),
+                          checked: typeof importedGroup.checked === 'boolean' ? importedGroup.checked : true,
+                          role: importedGroup.role === 'moderator' ? 'moderator' : 'admin'
+                      });
+                      existingGroupIDs.add(cleanGroupID);
                       addedCount++;
+                  } else {
+                      skippedCount++;
                   }
               });
 
-              console.log(`Import merge results: Added ${addedCount}, Skipped ${skippedCount}`);
-
-              // Save the merged list
+              console.log(`FSA (Options): Import merge results: Added ${addedCount}, Skipped ${skippedCount}`);
               chrome.storage.sync.set({ groups: existingGroups }, function() {
                   if (chrome.runtime.lastError) {
                       alert('Error saving imported groups: ' + chrome.runtime.lastError.message);
                   } else {
                       alert(`Import successful!\nAdded: ${addedCount} group(s)\nSkipped: ${skippedCount} duplicate/invalid group(s)`);
-                      saveButton.classList.remove('yellow'); // Import implies save
+                      saveButton.classList.remove('yellow');
                       loadGroups(); // Reload the table UI from storage
-                      chrome.runtime.sendMessage({ action: 'refreshPopup' }).catch(e => {});
                   }
-                  importFileInput.value = ''; // Reset file input regardless of save success/fail
+                  importFileInput.value = '';
               });
           });
-
-      }; // End reader.onload
-      reader.onerror = function(e) {
-           console.error("Error reading import file:", e);
-           alert("Error reading the selected file.");
-           importFileInput.value = ''; // Reset file input
       };
-      reader.readAsText(file); // Read the file
-  }); // --- End Import ---
-}); // End DOMContentLoaded
-// --- END OF FILE options.js ---
+      reader.readAsText(file);
+  });
+});
+// --- END OF FILE options.js ---```

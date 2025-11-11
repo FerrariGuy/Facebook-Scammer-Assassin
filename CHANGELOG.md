@@ -26,10 +26,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is a patch release that improves the reliability of the blocking function.
 
-**Note:** Install via the files attached below. See main [README](https://github.com/FerrariGuy/Facebook-Scammer-Assassin#installation) for instructions. 
-
 ### Fixed
 - Updated internal parameters (`doc_id` and input flags) for the GraphQL block mutation based on recent network analysis. This should more reliably trigger enhanced blocking options like "delete recent content" and "block future accounts" when performed via the extension, aligning better with Facebook's current implementation from the Member List context.
 
+## [2.5.3] - 2025-11-11
+
+### Fixed
+- **Critical blocking functionality restored.** Updated the internal GraphQL `doc_id` to the latest version required by Facebook, fixing the primary "Block" action which had stopped working.
+- Implemented a more robust blocking mechanism that automatically retries with a "simple" block if the initial "aggressive" block (with content deletion flags) fails. This transparently fixes blocking for Facebook Pages, which do not support the aggressive flags.
+- Updated `manifest.json` to be compliant with Mozilla's `data_collection` policy, resolving AMO validation errors.
+
+### Changed
+- Refactored the internal blocking script (`graphQLBlocker.js`) to use constants for API parameters, making future maintenance and updates significantly easier.
+- Refactored the page data scraping script (`pageDataExtractor.js`) for improved clarity, performance, and maintainability.
+- Standardized console log prefixes across all extension components (`popup.js`, `options.js`, etc.) to make debugging easier.
+
 ## Disclaimer:
 This extension interacts with Facebook's internal structure and APIs. Facebook may change its platform at any time, which could break this extension's functionality without warning. Furthermore, automating actions or accessing data in ways not intended by the standard user interface may potentially violate Facebook's Terms of Service. Use this extension responsibly and at your own risk. The developer assumes no liability for any consequences resulting from its use.
+
+**Note:** Install via the files attached below. See main [README](https://github.com/FerrariGuy/Facebook-Scammer-Assassin#installation) for instructions. 

@@ -1,14 +1,17 @@
 {
   "manifest_version": 3,
   "name": "Facebook Scammer Assassin",
-  "version": "2.5.3",
-  "description": "Extracts Facebook user info and provides tools to block them from groups.",
+  "version": "2.6.0",
+  "default_locale": "en",
+  "description": "__MSG_extDescription__",
   "action": {
     "default_popup": "popup.html",
+    "default_title": "Facebook Scammer Assassin",
     "default_icon": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon.png"
+      "16": "icons/icon16-light.png",
+      "32": "icons/icon32-light.png",
+      "48": "icons/icon48-light.png",
+      "128": "icons/icon128-light.png"
     }
   },
   "permissions": [
@@ -16,9 +19,7 @@
     "storage"
   ],
   "host_permissions": [
-    "https://www.facebook.com/*",
-    "https://m.facebook.com/*",
-    "https://mbasic.facebook.com/*"
+    "https://*.facebook.com/*"
   ],
   "web_accessible_resources": [
     {
@@ -27,35 +28,30 @@
         "options.js",
         "Sortable.min.js",
         "browser-polyfill.min.js",
-        "shrug_icon.png",
-        "donate_qr.png"
+        "icons/shrug_icon.png",
+        "icons/donate_qr.png"
       ],
       "matches": [ "https://*.facebook.com/*" ]
     }
   ],
   "background": {
-    // "service_worker": "service-worker.js" // Comment out V3 key
-     // Using "scripts" key despite MV3 because AMO linter rejects "service_worker" key (as of 2025-04-05).
-    "scripts": ["service-worker.js"], // Try V2 key again
-    "persistent": false // MV2 often needed this; maybe helps linter? Usually not needed for MV3 SW.
+    "scripts": ["service-worker.js"],
+    "service_worker": "service-worker.js"
   },
   "options_page": "options.html",
-
   "browser_specific_settings": {
     "gecko": {
       "id": "scammer-assassin@ferrariguy.github.com",
-      "strict_min_version": "128.0",
-      "data_collection": {
-        "private_data": false,
-        "personal_information": false,
-        "usage_data": false
+      "strict_min_version": "126.0",
+      "data_collection_permissions": {
+        "required": ["none"]
       }
     }
   },
-
   "icons": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon.png"
+    "16": "icons/icon16-light.png",
+    "32": "icons/icon32-light.png",
+    "48": "icons/icon48-light.png",
+    "128": "icons/icon128-light.png"
   }
 }

@@ -7,10 +7,27 @@
 
 A browser extension for Firefox & Chrome (Manifest V3) designed to help Facebook group administrators and moderators quickly identify and block potential scammers, spammers, or problematic users directly from their profile page within the context of the groups they manage.
 
-**Current Version: 2.5.1**
-
+**Current Version: 2.6.0*
 
 **Note:** This extension is currently distributed directly via GitHub Releases, not the official browser stores.
+
+This is a major feature release that introduces full internationalization support, a new application icon, and several critical bug fixes.
+
+### ✨ What's New
+
+*   **Full Multi-Language Support:** The extension is now fully internationalized (i18n) and includes translations for **19 languages**! It will automatically display in the user's browser language, with English as the default fallback. Supported languages include:
+    *   Arabic, Czech, German, Greek, Spanish, Estonian, Finnish, French, Hindi, Indonesian, Italian, Japanese, Georgian, Lithuanian, Latvian, Malay, Norwegian, Polish, Portuguese, Russian (displaying Ukrainian), Swedish, Turkish, and Ukrainian.
+*   **New Application Icon:** The extension icon has been completely redesigned to be clearer, more professional, and instantly recognizable in your browser toolbar.
+
+### 🐛 Fixes & Improvements
+
+*   **Critical Fix:** Fixed a major regression bug that caused the "Block" button to stop working in the popup. The core blocking functionality is now fully restored.
+*   **Fixed:** The "Export Groups" button on the Options page is now working correctly.
+*   **Improved:** The manifest file has been updated to a universal hybrid model, ensuring better compatibility with both modern Chrome/Edge and Firefox from a single codebase.
+*   **Improved:** The entire codebase has been significantly refactored for better performance, stability, and easier maintenance in the future.
+
+---
+*Standard installation instructions and disclaimer remain the same.
 
 ## Key Features (Stable since v2.5.0)
 
@@ -119,6 +136,20 @@ Download the appropriate file for your browser from the **[Latest Release Page](
 *   **"Act as Page":** Functionality when acting as a Page is not guaranteed or tested.
 *   **Data Scraping Timing:** Occasionally, User or Group Name might not be detected on the first load. Reloading the page and reopening the popup typically resolves this.
 *   **Error Handling:** Basic error handling is included, but complex Facebook errors might not always be handled gracefully.
+
+### A Note on How This Extension Works & Its Fragility
+
+This extension provides powerful features by interacting directly with Facebook's internal (undocumented) GraphQL API. This is the same system the Facebook website uses to perform actions like blocking a user and deleting their recent content.
+
+**Why does this matter?**
+
+Because these internal systems are not public, Facebook can change them at any time without warning. This means the extension is inherently **fragile**. A feature, especially the core "Block" function, might suddenly stop working.
+
+The key parameters that can change include:
+*   **`doc_id`**: A unique identifier for a specific action (like "block a group member").
+*   **GraphQL Variables**: The structure of the data sent to perform the action.
+
+When the extension breaks, it requires a manual process of "reverse-engineering" the new API calls using the browser's developer tools. If you are technically inclined and notice a feature has broken, feel free to investigate the `Network` tab for `/api/graphql/` requests and open an issue with your findings.
 
 ## Changelog
 See the [CHANGELOG.md](CHANGELOG.md) file for details on changes between versions. 

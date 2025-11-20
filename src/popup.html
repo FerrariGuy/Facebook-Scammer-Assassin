@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>Facebook Data Reader</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="theme-loader.js"></script>
+  
+  <title>__MSG_extName__</title>
   <style>
     body { width: 350px; font-family: sans-serif; font-size: 14px; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 10px;}
@@ -62,7 +67,7 @@
         margin-bottom: 8px;
         border-bottom: 1px solid #eee;
         padding-bottom: 4px;
-        text-align: center; /* <-- Add this */
+        text-align: center; 
     }
 
   </style>
@@ -73,51 +78,46 @@
   <script src="graphQLBlocker.js"></script>
   <!-- Load the main popup script LAST -->
   <script src="popup.js"></script>
+  
 </head>
 <body>
-  <table id="infoTable"> <!-- Added ID -->
+  <table id="infoTable">
     <tr>
-      <th id="labelName">User Name:</th> <!-- Added ID -->
-      <td id="userName">Loading...</td>
+      <th id="labelName" data-i18n="userNameLabel"></th>
+      <td id="userName" data-i18n="loadingText"></td>
     </tr>
     <tr>
-      <th id="labelID">User ID:</th> <!-- Added ID -->
-      <td id="userID">Loading...</td>
+      <th id="labelID" data-i18n="userIDLabel"></th>
+      <td id="userID" data-i18n="loadingText"></td>
     </tr>
     <tr>
-      <th id="labelVanity">User Vanity:</th> <!-- Added ID -->
-      <td id="userVanity">Loading...</td>
+      <th id="labelVanity" data-i18n="userVanityLabel"></th>
+      <td id="userVanity" data-i18n="loadingText"></td>
     </tr>
      <tr>
-      <th>Actions:</th> <!-- Combined action row -->
+      <th data-i18n="thAction"></th>
       <td>
-          <button id="copyButton" class="copy_userDataButton">Copy Data</button>
-          <!-- NEW "Add to Options" Button (Initially Hidden) -->
-          <button id="addToOptionsButton" class="copy_userDataButton" style="display: none; margin-left: 5px; background-color: #ffc107; color: black;">Add to Options</button>
+          <button id="copyButton" class="copy_userDataButton" data-i18n="copyButtonText"></button>
+          <button id="addToOptionsButton" class="copy_userDataButton" style="display: none; margin-left: 5px; background-color: #ffc107; color: black;" data-i18n="addToOptionsButtonText"></button>
       </td>
     </tr>
   </table>
 
-  <button id="profileActivityButton" class="profileButton" disabled>Profile's Public Activity</button>
-  
-  <!-- NEW Shrug Icon Container -->
-  <div id="shrugContainer" style="text-align: center; margin-top: 15px; display: none;">
-      <img id="shrugIcon" src="shrug_icon.png" alt="Info not applicable" style="max-width: 80px; max-height: 80px;">
-      <!-- Optional text below icon -->
-      <!-- <p style="margin-top: 5px; font-style: italic; color: #555;">Info N/A on this page type</p> -->
-  </div>
-  <!-- END Shrug Icon -->
+  <button id="profileActivityButton" class="profileButton" disabled data-i18n="profileActivityButtonText"></button>
 
-  <h1 id="blockScammerHeading">Block Scammer:</h1> <!-- Added ID for potential message updates -->
+  <div id="shrugContainer" style="text-align: center; margin-top: 15px; display: none;">
+      <img id="shrugIcon" src="icons/shrug_icon.png" alt="Info not applicable" style="max-width: 80px; max-height: 80px;">
+  </div>
+
+  <h1 id="blockScammerHeading" data-i18n="blockScammerHeading"></h1>
   <table id="groupTable">
     <thead>
         <tr>
-          <th>Group Nickname</th>
-          <th>Action</th>
+          <th data-i18n="thNickname"></th>
+          <th data-i18n="thAction"></th>
         </tr>
     </thead>
      <tbody>
-        <!-- Group rows added by JS -->
      </tbody>
   </table>
 </body>

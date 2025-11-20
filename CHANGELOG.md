@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2025-11-15
+
+### Added
+- **Full Internationalization (i18n):** Refactored the entire extension to support multiple languages. This release includes 19 initial language translations.
+- **New Application Icon:** Replaced the original icon with a new design for better clarity and visibility.
+
+### Fixed
+- **Critical:** Fixed a regression bug where the "Block" button in the popup was non-functional due to a variable scope issue in `popup.js`.
+- Fixed the "Export Groups" button on the options page, which was unresponsive.
+- Corrected various minor internationalization display issues, such as untranslated text in generated content (e.g., "Profile Link" in copied text).
+
+### Changed
+- **Manifest:** The `manifest.json` file is now a universal hybrid model, using both `"service_worker"` and `"scripts"` keys to ensure compatibility with both Chrome/Edge and Firefox's AMO linter from a single file.
+- **Codebase:** Significant refactoring and cleanup of `popup.js` and `options.js` for improved readability, performance, and maintainability.
+
 ## [2.5.0] - 2025-04-02  
 
 ### Fixed

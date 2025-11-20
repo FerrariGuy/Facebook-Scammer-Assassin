@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Options - Facebook Scammer Assassin</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="theme-loader.js"></script>
+  
+    <title data-i18n="optionsTitle"></title>
     <style>
         /* --- Base styles --- */
         body { font-family: sans-serif; padding: 15px; }
@@ -48,16 +53,13 @@
 
         .form-actions-left {
              order: 1; /* Leftmost item */
-             /* Let width be determined by content */
         }
         .form-actions-left p small { margin-top: 10px; display: block; }
 
         .donation-section-middle {
             order: 2; /* Middle item */
             text-align: center;
-            padding: 0 10px; /* Add some horizontal padding */
-             /* Let width be determined by content, or set a flex-basis */
-             /* flex-basis: 30%; */
+            padding: 0 10px;
         }
         .donation-section-middle h3 { margin-top: 0; margin-bottom: 5px; font-size: 1em; } /* Smaller heading */
         .donation-section-middle p { font-size: 0.85em; margin-bottom: 8px; color: #333; line-height: 1.3;}
@@ -67,79 +69,75 @@
 
         .io-section-right {
             order: 3; /* Rightmost item */
-            /* border: 1px solid #00000000; */ /* Invisible border */
             padding: 15px;
             border-radius: 5px;
-            background-color: #00000000; /* Restore light bg for contrast */
             min-width: 250px; /* Minimum width */
             text-align: left;
         }
         .io-section-right h2 { margin-top: 0; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
         .io-section-right button { margin-right: 5px; margin-bottom: 10px; }
         .io-section-right p small { display: block; margin-top: 10px; }
-
-        /* SortableJS helper classes */
         .sortable-ghost { opacity: 0.4; background-color: #eee !important; }
-
+        
     </style>
     <!-- Libraries FIRST -->
     <script src="browser-polyfill.min.js"></script>
     <script src="Sortable.min.js"></script>
     <!-- Options script LAST -->
-    <script src="options.js"></script>
+    <script src="options.js"></script>   
 </head>
 <body>
-    <h1>Facebook Group Settings</h1>
-    <p>Configure the groups where you want to enable blocking and specify your role in each.</p>
+    <h1 data-i18n="optionsHeading"></h1>
+    <p data-i18n="optionsDescription"></p>
 
-    <!-- Form still wraps only table for data collection -->
     <form id="groupForm">
         <div class="main-content-area">
             <table id="groupTable">
                 <thead>
                     <tr>
-                        <th class="drag-handle"></th><th>Status</th><th>Include?</th><th>Group Name*</th>
-                        <th>Nickname</th><th>Group ID*</th><th>My Role*</th><th>Group URL</th><th>Action</th>
+                        <th class="drag-handle"></th>
+                        <th data-i18n="thStatus"></th>
+                        <th data-i18n="thInclude"></th>
+                        <th data-i18n="thGroupName"></th>
+                        <th data-i18n="thNickname"></th>
+                        <th data-i18n="thGroupID"></th>
+                        <th data-i18n="thMyRole"></th>
+                        <th data-i18n="thGroupURL"></th>
+                        <th data-i18n="thAction"></th>
                     </tr>
                 </thead>
-                <tbody><!-- Rows --></tbody>
+                <tbody><!-- Rows are added by JS --></tbody>
             </table>
         </div>
-        <!-- Hidden save button still needed for form submission -->
         <button type="submit" id="saveButton" style="display: none;">Save (Hidden)</button>
     </form>
 
-    <!-- NEW: Container for Actions, Donation, IO - Placed AFTER form -->
     <div class="bottom-controls-container">
-
-         <!-- Left Column: Action Buttons -->
          <div class="form-actions-left">
-             <button type="button" id="addRowButton">Add Group</button>
-             <button type="button" id="visibleSaveButton">Save Settings</button>
-             <p><small>* Group Name, Group ID, and My Role are required.</small></p>
+             <button type="button" id="addRowButton" data-i18n="addGroupButton"></button>
+             <button type="button" id="visibleSaveButton" data-i18n="saveSettingsButton"></button>
+             <p><small data-i18n="requiredFieldsNotice"></small></p>
          </div>
 
-         <!-- Middle Column: Donation Section -->
          <div class="donation-section-middle">
-             <h3>Support Development</h3>
-             <p>If you find this extension helpful, please consider supporting...</p>
+             <h3 data-i18n="donationHeading"></h3>
+             <p data-i18n="donationText"></p>
              <div>
-                 <a href="https://www.paypal.com/donate/?business=PXY7769HB3QWN&no_recurring=0&item_name=Thanks+for+the+support+or+appreciation+of+whichever+object%2Fcode%2Fetc+I%27ve+published.&currency_code=USD" target="_blank" rel="noopener noreferrer" class="paypal-button">Donate via PayPal</a>
+                 <a href="https://www.paypal.com/donate/?business=PXY7769HB3QWN&no_recurring=0&item_name=Thanks+for+the+support+or+appreciation+of+whichever+object%2Fcode%2Fetc+I%27ve+published.&currency_code=USD" target="_blank" rel="noopener noreferrer" class="paypal-button" data-i18n="donationButton"></a>
                  <br/>
-                 <img src="donate_qr.png" alt="PayPal QR Code" title="Scan for PayPal Donation" />
+                 <img src="icons/donate_qr.png" alt="PayPal QR Code" title="Scan for PayPal Donation" />
              </div>
-             <p class="disclaimer">Donations are voluntary and appreciated!</p>
+             <p class="disclaimer" data-i18n="donationDisclaimer"></p>
          </div>
 
-         <!-- Right Column: Import/Export -->
          <div class="io-section-right">
-             <h2>Import / Export Settings</h2>
-             <button type="button" id="exportButton">Export Groups</button>
-             <button type="button" id="importButton">Import Groups</button>
+             <h2 data-i18n="ioHeading"></h2>
+             <button type="button" id="exportButton" data-i18n="exportGroupsButton"></button>
+             <button type="button" id="importButton" data-i18n="importGroupsButton"></button>
              <input type="file" id="importFile" accept=".json" />
-             <p><small>Imports will add new groups and skip existing groups...</small></p>
+             <p><small data-i18n="ioDescription"></small></p>
          </div>
 
-    </div> <!-- End bottom-controls-container -->
+    </div>
 </body>
 </html>
